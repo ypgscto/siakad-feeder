@@ -19,8 +19,8 @@ class AdminUserSeeder extends Seeder
             [
                 'name' => 'Administrator Siakad-Feeder',
                 'password' => Hash::make($password),
-                'siakad_user_id' => 'local-admin',
-                'siakad_login' => $login,
+                'siakad_user_id' => null,
+                'siakad_login' => null,
                 'jenis_user' => '9',
                 'role' => 'superadmin',
                 'is_active' => true,

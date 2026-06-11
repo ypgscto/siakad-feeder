@@ -3,7 +3,8 @@
         <h1 class="text-xl font-bold text-slate-800">Siakad-Feeder</h1>
         <p class="text-sm text-slate-500 mt-1">Jembatan SIAKAD → Neo Feeder PDDIKTI</p>
         <p class="text-xs text-slate-400 mt-2">
-            Akun harus sudah didaftarkan superadmin. Password = password login <strong>Siakad (SSO)</strong>, bukan password lokal admin.
+            Akun Siakad: password = login <strong>SSO Siakad</strong> (bukan password lokal Feeder).
+            Admin lokal pertama kali: <strong>admin@gmail.com</strong> / <strong>123456</strong> (ganti setelah masuk).
         </p>
     </div>
 

@@ -67,6 +67,8 @@ class User extends Authenticatable
 
     public function isSiakadSourced(): bool
     {
-        return trim((string) $this->siakad_user_id) !== '';
+        $id = trim((string) $this->siakad_user_id);
+
+        return $id !== '' && $id !== 'local-admin';
     }
 }
