@@ -1,5 +1,7 @@
 # Deploy Siakad-Feeder via GitHub Actions
 
+**Repository:** https://github.com/ypgscto/siakad-feeder
+
 Panduan push ke GitHub dan deploy otomatis ke server (VPS/Linux) dengan SSH + rsync.
 
 ## Ringkasan alur
@@ -27,56 +29,113 @@ git add .
 git commit -m "Initial commit Siakad-Feeder"
 ```
 
-Buat repo kosong di GitHub (mis. `ypgs-it/Siakad-Feeder`), lalu:
+Remote sudah diarahkan ke `https://github.com/ypgscto/siakad-feeder.git`. Push:
 
 ```bash
-git branch -M main
-git remote add origin git@github.com:ORG/Siakad-Feeder.git
 git push -u origin main
 ```
 
-## 2. Setup awal server
+## 2. Setup awal server (Ubuntu/Debian)
+
+Jalankan di server sebagai user yang punya akses SSH (mis. `deploy`).
+
+### 2.1 Paket & PHP
 
 ```bash
-# Clone sekali (opsional) atau buat folder kosong untuk rsync
-sudo mkdir -p /var/www/siakad-feeder
-sudo chown -R deploy:deploy /var/www/siakad-feeder
-
-# Setelah file pertama masuk (deploy manual atau rsync):
-cd /var/www/siakad-feeder
-bash deploy/server-setup.sh /var/www/siakad-feeder
-nano .env   # APP_ENV=production, APP_DEBUG=false, APP_URL, API, Feeder
+sudo apt update
+sudo apt install -y nginx php8.2-fpm php8.2-cli php8.2-sqlite3 php8.2-mbstring \
+  php8.2-xml php8.2-curl php8.2-zip git unzip
+php -v   # harus 8.2+
 ```
 
-Contoh `.env` production:
+### 2.2 Folder aplikasi
+
+```bash
+sudo mkdir -p /var/www/siakad-feeder
+sudo chown -R $USER:$USER /var/www/siakad-feeder
+```
+
+**Opsi A — tunggu deploy GitHub pertama** (rsync mengisi folder), lalu:
+
+```bash
+cd /var/www/siakad-feeder
+cp .env.example .env
+nano .env
+php artisan key:generate
+bash deploy/server-setup.sh /var/www/siakad-feeder
+```
+
+**Opsi B — clone manual dulu** (agar `.env` siap sebelum Actions):
+
+```bash
+cd /var/www
+git clone https://github.com/ypgscto/siakad-feeder.git siakad-feeder
+cd siakad-feeder
+cp .env.example .env
+nano .env
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+bash deploy/server-setup.sh /var/www/siakad-feeder
+```
+
+### 2.3 Isi `.env` production (contoh)
 
 ```env
+APP_NAME="Siakad-Feeder"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://siakad-feeder.kampus.ac.id
+APP_URL=https://feeder.stikesgunungsari.ac.id
 
 DB_CONNECTION=sqlite
 DB_DATABASE=
 
 CACHE_STORE=file
 SESSION_DRIVER=database
-QUEUE_CONNECTION=database
+
+SIAKAD_API_BASE_URL=http://IP-ATAU-HOST-SIAKAD-API
+SIAKAD_API_TOKEN=token-sama-dengan-siakad-api
+SIAKAD_KODE_ID=093146
+
+FEEDER_WS_URL=http://103.167.35.204:8100/ws/live2.php
+FEEDER_USERNAME=...
+FEEDER_PASSWORD=...
+FEEDER_ID_PERGURUAN_TINGGI=...
 ```
 
-Nginx: lihat `deploy/nginx.conf.example`.
+### 2.4 Nginx
 
-## 3. Kunci SSH untuk GitHub Actions
+```bash
+sudo cp /var/www/siakad-feeder/deploy/nginx.conf.example /etc/nginx/sites-available/siakad-feeder
+sudo nano /etc/nginx/sites-available/siakad-feeder
+# Ubah server_name dan pastikan root = /var/www/siakad-feeder/public
+
+sudo ln -sf /etc/nginx/sites-available/siakad-feeder /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 2.5 Kunci SSH untuk GitHub Actions
 
 Di server (user `deploy`):
 
 ```bash
 ssh-keygen -t ed25519 -C "github-actions-siakad-feeder" -f ~/.ssh/github_deploy -N ""
 cat ~/.ssh/github_deploy.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/github_deploy ~/.ssh/authorized_keys
+cat ~/.ssh/github_deploy
 ```
 
-Salin **private key** (`~/.ssh/github_deploy`) untuk GitHub Secret.
+Salin **seluruh isi private key** ke GitHub Secret `DEPLOY_SSH_KEY`.
 
-## 4. GitHub Secrets
+### 2.6 Hak akses (setelah deploy pertama)
+
+```bash
+cd /var/www/siakad-feeder
+sudo chown -R www-data:$USER storage bootstrap/cache database
+chmod -R ug+rwx storage bootstrap/cache
+chmod 664 database/database.sqlite
+```
+
+## 3. GitHub Secrets
 
 Di repo GitHub: **Settings → Secrets and variables → Actions → New repository secret**
 
@@ -90,12 +149,12 @@ Di repo GitHub: **Settings → Secrets and variables → Actions → New reposit
 
 Opsional: buat **Environment** `production` di GitHub untuk approval manual sebelum deploy.
 
-## 5. Deploy
+## 4. Deploy
 
 - **Otomatis:** push ke branch `main`
 - **Manual:** tab **Actions** → **Deploy to Server** → **Run workflow**
 
-## 6. Setelah deploy
+## 5. Setelah deploy
 
 - Cek `https://APP_URL/login`
 - Superadmin: atur koneksi di **Pengaturan Koneksi** atau pastikan `.env` benar
