@@ -24,4 +24,6 @@
     </div>
 
     @include('layouts.partials.sidebar-nav')
+
+    @include('layouts.partials.sidebar-footer', ['forceExpanded' => $forceExpanded])
 </aside>
