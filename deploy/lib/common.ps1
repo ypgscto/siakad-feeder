@@ -255,8 +255,8 @@ function Ensure-DeployMysqlDatabase {
         throw "DB_DATABASE kosong di .env (contoh: siakad_feeder)"
     }
 
-    $host = Read-DeployEnvValue "DB_HOST"
-    if ($host -eq "") { $host = "127.0.0.1" }
+    $dbHost = Read-DeployEnvValue "DB_HOST"
+    if ($dbHost -eq "") { $dbHost = "127.0.0.1" }
     $port = Read-DeployEnvValue "DB_PORT"
     if ($port -eq "") { $port = "3306" }
     $user = Read-DeployEnvValue "DB_USERNAME"
@@ -269,7 +269,7 @@ function Ensure-DeployMysqlDatabase {
     $sql = "CREATE DATABASE IF NOT EXISTS ``$dbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
     if ($pass -ne "") { $env:MYSQL_PWD = $pass }
     try {
-        & $mysql "-h$host" "-P$port" "-u$user" "-e" $sql
+        & $mysql "-h$dbHost" "-P$port" "-u$user" "-e" $sql
         if ($LASTEXITCODE -ne 0) {
             throw "mysql gagal membuat database $dbName (exit $LASTEXITCODE)"
         }
