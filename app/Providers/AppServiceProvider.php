@@ -28,9 +28,16 @@ class AppServiceProvider extends ServiceProvider
 
         if (! $this->app->runningInConsole()) {
             $request = $this->app->make('request');
-            $scriptDir = str_replace('\\', '/', dirname($request->getScriptName()));
-            $root = rtrim($request->getSchemeAndHttpHost().($scriptDir === '/' ? '' : $scriptDir), '/');
-            URL::forceRootUrl($root);
+            $detected = rtrim($request->root(), '/');
+            $configured = rtrim((string) config('app.url'), '/');
+
+            $root = ($detected !== '' && str_starts_with($detected, 'http'))
+                ? $detected
+                : $configured;
+
+            if ($root !== '') {
+                URL::forceRootUrl($root);
+            }
         }
 
         View::composer('layouts.partials.sidebar-nav', function ($view): void {
