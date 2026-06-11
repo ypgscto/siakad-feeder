@@ -65,6 +65,8 @@ return [
     */
     'asset_url' => env('ASSET_URL'),
 
+    'subdirectory' => env('APP_SUBDIRECTORY', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
