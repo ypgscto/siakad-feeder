@@ -54,6 +54,34 @@ function Get-DeployNpm {
     return "npm"
 }
 
+function Get-DeployMysql {
+    if ($env:SIFEEDER_MYSQL -and (Test-Path $env:SIFEEDER_MYSQL)) { return $env:SIFEEDER_MYSQL }
+    foreach ($root in Get-ToolRoots) {
+        $mysql = Get-ChildItem "$root\bin\mysql\*\mysql.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($mysql) { return $mysql.FullName }
+        $mysql = Join-Path $root "bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe"
+        if (Test-Path $mysql) { return $mysql }
+    }
+    return "mysql"
+}
+
+function Read-DeployEnvValue {
+    param([string]$Key)
+    $envPath = Join-Path $script:DeployAppDir ".env"
+    if (-not (Test-Path $envPath)) { return "" }
+    $raw = Get-Content $envPath -Raw
+    if ($raw -match "(?m)^\s*$([regex]::Escape($Key))\s*=\s*(.*)$") {
+        return $Matches[1].Trim().Trim('"').Trim("'")
+    }
+    return ""
+}
+
+function Get-DeployDbConnection {
+    $conn = Read-DeployEnvValue "DB_CONNECTION"
+    if ($conn -eq "") { return "mysql" }
+    return $conn
+}
+
 function Invoke-DeployCommand {
     param([string]$Executable, [string[]]$Arguments)
     Write-Host "  >> $Executable $($Arguments -join ' ')" -ForegroundColor DarkGray
@@ -78,11 +106,6 @@ function Backup-DeployProtectedFiles {
         Write-DeployOk ".env di-backup ke .deploy-backup\env-$stamp.bak"
     }
 
-    $sqlite = Join-Path $script:DeployAppDir "database\database.sqlite"
-    if (Test-Path $sqlite) {
-        Copy-Item $sqlite (Join-Path $backupDir "database-$stamp.sqlite") -Force
-        Write-DeployOk "database.sqlite di-backup"
-    }
 }
 
 function Ensure-DeployDirectories {
@@ -94,8 +117,10 @@ function Ensure-DeployDirectories {
         if (-not (Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null }
     }
 
-    $sqlite = Join-Path $script:DeployAppDir "database\database.sqlite"
-    if (-not (Test-Path $sqlite)) { New-Item -ItemType File -Path $sqlite -Force | Out-Null }
+    if ((Get-DeployDbConnection) -eq "sqlite") {
+        $sqlite = Join-Path $script:DeployAppDir "database\database.sqlite"
+        if (-not (Test-Path $sqlite)) { New-Item -ItemType File -Path $sqlite -Force | Out-Null }
+    }
 }
 
 function Test-PhpExtensionLoaded {
@@ -200,6 +225,58 @@ function Restart-DeployApache {
         return
     }
     Write-DeployWarn "Service Apache tidak ditemukan - restart manual web server"
+}
+
+function Ensure-PhpMysql {
+    param([string]$PhpExe)
+
+    if (Test-PhpExtensionLoaded $PhpExe "pdo_mysql") {
+        Write-DeployOk "pdo_mysql aktif"
+        return
+    }
+
+    throw @"
+pdo_mysql belum aktif di PHP.
+
+Aplikasi lain (simawa-gs, simutu) memakai MySQL - aktifkan di php.ini:
+  extension=php_pdo_mysql.dll
+  extension=php_mysqli.dll
+
+Jalankan: php -m | findstr -i mysql
+Lalu restart Apache.
+"@
+}
+
+function Ensure-DeployMysqlDatabase {
+    if ((Get-DeployDbConnection) -ne "mysql") { return }
+
+    $dbName = Read-DeployEnvValue "DB_DATABASE"
+    if ($dbName -eq "") {
+        throw "DB_DATABASE kosong di .env (contoh: siakad_feeder)"
+    }
+
+    $host = Read-DeployEnvValue "DB_HOST"
+    if ($host -eq "") { $host = "127.0.0.1" }
+    $port = Read-DeployEnvValue "DB_PORT"
+    if ($port -eq "") { $port = "3306" }
+    $user = Read-DeployEnvValue "DB_USERNAME"
+    if ($user -eq "") { $user = "root" }
+    $pass = Read-DeployEnvValue "DB_PASSWORD"
+
+    $mysql = Get-DeployMysql
+    Write-Host "  >> Buat database MySQL jika belum ada: $dbName" -ForegroundColor DarkGray
+
+    $sql = "CREATE DATABASE IF NOT EXISTS ``$dbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    if ($pass -ne "") { $env:MYSQL_PWD = $pass }
+    try {
+        & $mysql "-h$host" "-P$port" "-u$user" "-e" $sql
+        if ($LASTEXITCODE -ne 0) {
+            throw "mysql gagal membuat database $dbName (exit $LASTEXITCODE)"
+        }
+        Write-DeployOk "Database MySQL: $dbName"
+    } finally {
+        Remove-Item Env:MYSQL_PWD -ErrorAction SilentlyContinue
+    }
 }
 
 function Ensure-PhpSqlite {
@@ -308,13 +385,6 @@ function Sync-DeployFromGitHub {
     Write-DeployOk "Kode sama dengan GitHub branch $($script:DeployGitBranch)"
 }
 
-function Test-DeployUsesSqlite {
-    $envPath = Join-Path $script:DeployAppDir ".env"
-    if (-not (Test-Path $envPath)) { return $true }
-    $raw = Get-Content $envPath -Raw
-    return $raw -match '(?m)^\s*DB_CONNECTION\s*=\s*sqlite\s*$'
-}
-
 function Invoke-DeployBuild {
     param(
         [string]$Php,
@@ -325,7 +395,11 @@ function Invoke-DeployBuild {
 
     Ensure-DeployDirectories
 
-    if (Test-DeployUsesSqlite) {
+    $dbConn = Get-DeployDbConnection
+    if ($dbConn -eq "mysql") {
+        Ensure-PhpMysql $Php
+        Ensure-DeployMysqlDatabase
+    } elseif ($dbConn -eq "sqlite") {
         Ensure-PhpSqlite $Php
     }
 

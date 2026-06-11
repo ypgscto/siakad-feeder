@@ -7,9 +7,9 @@ Hanya **2 skrip** yang perlu diingat:
 | **Instalasi pertama** | `deploy\install.ps1` |
 | **Update dari GitHub** | `deploy\update.ps1` |
 
-Kedua skrip otomatis: sinkron GitHub, aktifkan SQLite PHP, `composer` + `npm build` + `migrate`, cache Laravel.
+Kedua skrip otomatis: sinkron GitHub, cek MySQL, buat database jika perlu, `composer` + `npm build` + `migrate`, cache Laravel.
 
-**.env dan database.sqlite tidak pernah ditimpa.**
+**Database: MySQL** (`siakad_feeder`) - sama seperti simawa-gs / simutu. **`.env` tidak pernah ditimpa.**
 
 ---
 
@@ -74,7 +74,7 @@ Login default (setelah seed): `admin@gmail.com` / `123456`
 | `fresh-install.ps1` | `install.ps1` |
 | `git-pull-deploy.ps1` | `update.ps1` |
 | `remote-post-deploy.ps1` | dipanggil internal `update.ps1` |
-| `enable-php-sqlite.ps1` | otomatis di `install` / `update` |
+| `enable-php-sqlite.ps1` | tidak dipakai (MySQL) |
 | `fix-apache-production.ps1` | sama dengan `update.ps1` |
 
 Panduan lengkap: [docs/DEPLOY-WINDOWS.md](../docs/DEPLOY-WINDOWS.md)

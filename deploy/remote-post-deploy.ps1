@@ -1,4 +1,4 @@
-# Dipanggil oleh GitHub Actions / wrapper lama — delegasi ke update.ps1 (tanpa git sync).
+# Dipanggil oleh GitHub Actions / wrapper lama - delegasi ke update.ps1 (tanpa git sync).
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "lib\common.ps1")
 

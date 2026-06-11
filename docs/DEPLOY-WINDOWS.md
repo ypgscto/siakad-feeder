@@ -57,8 +57,17 @@ FEEDER_USERNAME=...
 FEEDER_PASSWORD=...
 FEEDER_PREFER_JSON=true
 
-DB_CONNECTION=sqlite
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=siakad_feeder
+DB_USERNAME=root
+DB_PASSWORD=<sama seperti aplikasi lain di server>
+
+SESSION_DRIVER=database
 ```
+
+Database `siakad_feeder` dibuat otomatis oleh `deploy\install.ps1` / `deploy\update.ps1`.
 
 ```powershell
 php artisan config:cache
@@ -133,7 +142,8 @@ Setiap push ke `main`, workflow deploy via SSH.
 | Gejala | Solusi |
 |--------|--------|
 | `git pull` konflik / overwrite | Pakai `deploy\update.ps1`, bukan `git pull` |
-| `could not find driver` (sqlite) | Otomatis di install/update; manual: `deploy\enable-php-sqlite.ps1` |
+| `could not find driver` | Pastikan `.env` pakai `DB_CONNECTION=mysql` (bukan sqlite) |
+| `Unknown database` | Set `DB_DATABASE=siakad_feeder` lalu `deploy\update.ps1` |
 | HTTP 500 | `deploy\diagnose.ps1` lalu `deploy\update.ps1`. Umum: migrate belum jalan, `manifest.json` hilang, `SESSION_DRIVER=database` tanpa tabel sessions |
 | HTTP 404 | Akses lewat `.../siakad-feeder/public/` |
 | `.env` hilang | Restore dari `.deploy-backup\env-*.bak` |

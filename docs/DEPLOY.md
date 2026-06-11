@@ -72,7 +72,8 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=http://siakad-feeder.test
 
-DB_CONNECTION=sqlite
+DB_CONNECTION=mysql
+DB_DATABASE=siakad_feeder
 DB_DATABASE=
 
 CACHE_STORE=file
@@ -170,7 +171,7 @@ Jangan jalankan `server-setup.ps1` atau `copy .env.example .env` untuk update ru
 
 - Buka URL di `APP_URL` → halaman login
 - Superadmin: **Pengaturan Koneksi** atau periksa `.env`
-- Database SQLite: `database\database.sqlite` (tidak dihapus saat `git pull`)
+- Database MySQL: `siakad_feeder` (kredensial di `.env`, tidak ditimpa deploy)
 
 ---
 
