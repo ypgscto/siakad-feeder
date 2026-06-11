@@ -26,22 +26,48 @@ class AppServiceProvider extends ServiceProvider
             // Abaikan saat migrasi / bootstrap awal.
         }
 
-        if (! $this->app->runningInConsole()) {
-            $request = $this->app->make('request');
-            $detected = rtrim($request->root(), '/');
-            $configured = rtrim((string) config('app.url'), '/');
+        [$root, $assetRoot] = $this->resolveApplicationUrls();
 
-            $root = ($detected !== '' && str_starts_with($detected, 'http'))
-                ? $detected
-                : $configured;
+        if ($root !== '') {
+            URL::forceRootUrl($root);
+        }
 
-            if ($root !== '') {
-                URL::forceRootUrl($root);
-            }
+        if ($assetRoot !== '') {
+            URL::useAssetOrigin($assetRoot);
         }
 
         View::composer('layouts.partials.sidebar-nav', function ($view): void {
             $view->with('sidebarMenu', app(SidebarMenu::class)->forUser(auth()->user()));
         });
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function resolveApplicationUrls(): array
+    {
+        $root = rtrim((string) config('app.url'), '/');
+        $assetRoot = rtrim((string) (config('app.asset_url') ?: $root), '/');
+
+        if ($this->app->runningInConsole()) {
+            return [$root, $assetRoot];
+        }
+
+        $request = request();
+        if ($request === null) {
+            return [$root, $assetRoot];
+        }
+
+        $detected = rtrim($request->root(), '/');
+        if ($detected === '' || ! str_starts_with($detected, 'http')) {
+            return [$root, $assetRoot];
+        }
+
+        $root = $detected;
+        if (blank(config('app.asset_url'))) {
+            $assetRoot = $detected;
+        }
+
+        return [$root, $assetRoot];
     }
 }

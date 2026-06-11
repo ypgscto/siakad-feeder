@@ -50,6 +50,8 @@ if (Test-Path ".env") {
     $envRaw = Get-Content ".env" -Raw
     Test-ItemOk ($envRaw -match 'APP_KEY=base64:[A-Za-z0-9+\/=]{20,}') "APP_KEY terisi" "php artisan key:generate"
     Test-ItemOk ($envRaw -match 'APP_URL=http') "APP_URL terisi" "set APP_URL=http://98.142.245.18/siakad-feeder/public"
+    $hasAsset = ($envRaw -match 'ASSET_URL=http') -or ($envRaw -match 'APP_URL=.*/siakad-feeder/public')
+    Test-ItemOk $hasAsset "ASSET_URL atau APP_URL subfolder /public" "set ASSET_URL=http://98.142.245.18/siakad-feeder/public"
     if ($dbConn -eq "mysql") {
         Test-ItemOk ($envRaw -match 'DB_DATABASE=\S+') "DB_DATABASE terisi" "set DB_DATABASE=siakad_feeder"
         Test-ItemOk ($envRaw -notmatch '(?m)^\s*DB_CONNECTION\s*=\s*sqlite\s*$') "bukan SQLite" "set DB_CONNECTION=mysql di .env"

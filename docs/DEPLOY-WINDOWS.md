@@ -46,7 +46,9 @@ Skrip otomatis:
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=http://98.142.245.18/siakad-feeder/public
+ASSET_URL=http://98.142.245.18/siakad-feeder/public
 APP_SUBDIRECTORY=/siakad-feeder/public
+SESSION_PATH=/siakad-feeder/public
 
 SIAKAD_API_BASE_URL=http://98.142.245.18/siakad-api/public
 SIAKAD_API_TOKEN=<sama dengan siakad-api>
