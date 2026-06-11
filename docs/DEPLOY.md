@@ -1,81 +1,63 @@
-# Deploy Siakad-Feeder via GitHub Actions
+# Deploy Siakad-Feeder (Windows + Laragon)
 
 **Repository:** https://github.com/ypgscto/siakad-feeder
 
-Panduan push ke GitHub dan deploy otomatis ke server (VPS/Linux) dengan SSH + rsync.
+Lokal dan server memakai **Windows** + **Laragon**. Deploy otomatis lewat GitHub Actions: SSH ke server → `git pull` → skrip PowerShell.
 
 ## Ringkasan alur
 
 1. Push ke branch `main` di GitHub
-2. GitHub Actions membangun asset (`npm run build`) dan `composer install --no-dev`
-3. File di-sync ke server (rsync), **tanpa** menimpa `.env`, `storage/`, atau `database.sqlite`
-4. SSH menjalankan `deploy/remote-post-deploy.sh` (migrate, cache)
+2. GitHub Actions SSH ke server Windows
+3. `git fetch` + `git reset --hard origin/main`
+4. `deploy/remote-post-deploy.ps1` — `composer install`, `npm run build`, `artisan migrate`, cache
 
-## Prasyarat server
+File **tidak** di-sync lewat rsync; server harus sudah punya clone Git + `.env` sendiri.
 
-- PHP **8.2+** (`pdo_sqlite`, `mbstring`, `curl`, `xml`, `zip`)
-- Nginx atau Apache dengan document root → `.../public`
-- User SSH untuk deploy (mis. `deploy`)
-- Opsional: Composer/Node **tidak wajib** di server (build dilakukan di GitHub)
+---
 
-## 1. Repository GitHub
+## 1. Lokal (Windows + Laragon)
 
-Di komputer lokal (folder proyek):
-
-```bash
-cd /path/to/Siakad-Feeder
-git init
-git add .
-git commit -m "Initial commit Siakad-Feeder"
+```powershell
+cd C:\laragon\www\Siakad-Feeder
+git status
+git push origin main
 ```
 
-Remote sudah diarahkan ke `https://github.com/ypgscto/siakad-feeder.git`. Push:
+Remote: `https://github.com/ypgscto/siakad-feeder.git`
 
-```bash
-git push -u origin main
-```
+Development:
 
-## 2. Setup awal server (Ubuntu/Debian)
-
-Jalankan di server sebagai user yang punya akses SSH (mis. `deploy`).
-
-### 2.1 Paket & PHP
-
-```bash
-sudo apt update
-sudo apt install -y nginx php8.2-fpm php8.2-cli php8.2-sqlite3 php8.2-mbstring \
-  php8.2-xml php8.2-curl php8.2-zip git unzip
-php -v   # harus 8.2+
-```
-
-### 2.2 Folder aplikasi
-
-```bash
-sudo mkdir -p /var/www/siakad-feeder
-sudo chown -R $USER:$USER /var/www/siakad-feeder
-```
-
-**Opsi A — tunggu deploy GitHub pertama** (rsync mengisi folder), lalu:
-
-```bash
-cd /var/www/siakad-feeder
-cp .env.example .env
-nano .env
+```powershell
+composer install
+npm install
+npm run build
+copy .env.example .env
 php artisan key:generate
-bash deploy/server-setup.sh /var/www/siakad-feeder
+php artisan migrate
 ```
 
-**Opsi B — clone manual dulu** (agar `.env` siap sebelum Actions):
+URL lokal (Auto virtual hosts Laragon): `http://siakad-feeder.test`
 
-```bash
-cd /var/www
+---
+
+## 2. Setup awal server Windows
+
+### 2.1 Prasyarat
+
+- **Laragon** (PHP 8.2+, Composer, Node.js — centang saat install)
+- **Git for Windows**
+- **OpenSSH Server** (Windows):  
+  *Settings → System → Optional features → Add OpenSSH Server*  
+  Lalu: `Start-Service sshd` dan buka port **22** di firewall.
+
+### 2.2 Clone proyek
+
+```powershell
+cd C:\laragon\www
 git clone https://github.com/ypgscto/siakad-feeder.git siakad-feeder
 cd siakad-feeder
-cp .env.example .env
-nano .env
-composer install --no-dev --optimize-autoloader
-npm ci && npm run build
-bash deploy/server-setup.sh /var/www/siakad-feeder
+copy .env.example .env
+notepad .env
 ```
 
 ### 2.3 Isi `.env` production (contoh)
@@ -84,7 +66,7 @@ bash deploy/server-setup.sh /var/www/siakad-feeder
 APP_NAME="Siakad-Feeder"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://feeder.stikesgunungsari.ac.id
+APP_URL=http://siakad-feeder.test
 
 DB_CONNECTION=sqlite
 DB_DATABASE=
@@ -92,7 +74,7 @@ DB_DATABASE=
 CACHE_STORE=file
 SESSION_DRIVER=database
 
-SIAKAD_API_BASE_URL=http://IP-ATAU-HOST-SIAKAD-API
+SIAKAD_API_BASE_URL=http://siakad-api.test
 SIAKAD_API_TOKEN=token-sama-dengan-siakad-api
 SIAKAD_KODE_ID=093146
 
@@ -102,73 +84,109 @@ FEEDER_PASSWORD=...
 FEEDER_ID_PERGURUAN_TINGGI=...
 ```
 
-### 2.4 Nginx
+### 2.4 Setup pertama
 
-```bash
-sudo cp /var/www/siakad-feeder/deploy/nginx.conf.example /etc/nginx/sites-available/siakad-feeder
-sudo nano /etc/nginx/sites-available/siakad-feeder
-# Ubah server_name dan pastikan root = /var/www/siakad-feeder/public
-
-sudo ln -sf /etc/nginx/sites-available/siakad-feeder /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+```powershell
+cd C:\laragon\www\siakad-feeder
+php artisan key:generate
+powershell -ExecutionPolicy Bypass -File deploy\server-setup.ps1
 ```
 
-### 2.5 Kunci SSH untuk GitHub Actions
+### 2.5 Laragon / web server
 
-Di server (user `deploy`):
+- Aktifkan **Auto virtual hosts** di Laragon
+- Folder `C:\laragon\www\siakad-feeder` → biasanya `http://siakad-feeder.test`
+- Document root harus mengarah ke folder **`public`** (Laragon otomatis untuk struktur Laravel)
+- Jika pakai **IIS**: install URL Rewrite; `public\web.config` sudah disertakan
 
-```bash
-ssh-keygen -t ed25519 -C "github-actions-siakad-feeder" -f ~/.ssh/github_deploy -N ""
-cat ~/.ssh/github_deploy.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/github_deploy ~/.ssh/authorized_keys
-cat ~/.ssh/github_deploy
+Tambah entri hosts jika perlu (Laragon sering otomatis):
+
+```
+127.0.0.1 siakad-feeder.test
 ```
 
-Salin **seluruh isi private key** ke GitHub Secret `DEPLOY_SSH_KEY`.
+Sesuaikan `APP_URL` dengan URL yang dipakai.
 
-### 2.6 Hak akses (setelah deploy pertama)
+### 2.6 Kunci SSH untuk GitHub Actions
 
-```bash
-cd /var/www/siakad-feeder
-sudo chown -R www-data:$USER storage bootstrap/cache database
-chmod -R ug+rwx storage bootstrap/cache
-chmod 664 database/database.sqlite
+Di **server** (PowerShell, user yang dipakai SSH — mis. user Windows Anda):
+
+```powershell
+ssh-keygen -t ed25519 -C "github-actions-siakad-feeder" -f $env:USERPROFILE\.ssh\github_deploy -N '""'
+Get-Content $env:USERPROFILE\.ssh\github_deploy.pub |
+    Add-Content $env:USERPROFILE\.ssh\authorized_keys
+Get-Content $env:USERPROFILE\.ssh\github_deploy
 ```
+
+Salin **seluruh private key** (`-----BEGIN ... END-----`) ke GitHub Secret `DEPLOY_SSH_KEY`.
+
+Repo **private**: di server, clone dengan credential atau deploy key:
+
+```powershell
+git config --global credential.helper manager
+git pull   # login GitHub sekali
+```
+
+---
 
 ## 3. GitHub Secrets
 
-Di repo GitHub: **Settings → Secrets and variables → Actions → New repository secret**
+Repo → **Settings → Secrets and variables → Actions**
 
-| Secret | Contoh | Wajib |
-|--------|--------|-------|
-| `DEPLOY_HOST` | `103.167.35.204` atau `siakad-feeder.kampus.ac.id` | Ya |
-| `DEPLOY_USER` | `deploy` | Ya |
-| `DEPLOY_SSH_KEY` | Isi private key (mulai `-----BEGIN...`) | Ya |
-| `DEPLOY_PATH` | `/var/www/siakad-feeder` | Ya |
+| Secret | Contoh (Windows) | Wajib |
+|--------|------------------|-------|
+| `DEPLOY_HOST` | IP server atau `192.168.1.10` | Ya |
+| `DEPLOY_USER` | `Administrator` atau nama user Windows | Ya |
+| `DEPLOY_SSH_KEY` | Private key OpenSSH | Ya |
+| `DEPLOY_PATH` | `C:/laragon/www/siakad-feeder` | Ya |
 | `DEPLOY_PORT` | `22` | Opsional |
 
-Opsional: buat **Environment** `production` di GitHub untuk approval manual sebelum deploy.
+Gunakan **garis miring `/`** di `DEPLOY_PATH` agar kompatibel dengan OpenSSH.
+
+---
 
 ## 4. Deploy
 
-- **Otomatis:** push ke branch `main`
-- **Manual:** tab **Actions** → **Deploy to Server** → **Run workflow**
+- **Otomatis:** `git push origin main`
+- **Manual:** GitHub → **Actions** → **Deploy to Server** → **Run workflow**
+
+### Deploy manual di server (tanpa Actions)
+
+```powershell
+cd C:\laragon\www\siakad-feeder
+git pull origin main
+powershell -ExecutionPolicy Bypass -File deploy\remote-post-deploy.ps1
+```
+
+---
 
 ## 5. Setelah deploy
 
-- Cek `https://APP_URL/login`
-- Superadmin: atur koneksi di **Pengaturan Koneksi** atau pastikan `.env` benar
-- Database SQLite ada di `database/database.sqlite` (tidak di-overwrite deploy)
+- Buka URL di `APP_URL` → halaman login
+- Superadmin: **Pengaturan Koneksi** atau periksa `.env`
+- Database SQLite: `database\database.sqlite` (tidak dihapus saat `git pull`)
 
-## Troubleshooting
+---
+
+## Troubleshooting (Windows)
 
 | Masalah | Solusi |
 |---------|--------|
-| Permission denied `storage` | `chmod -R ug+rwx storage bootstrap/cache` |
-| 500 setelah deploy | `php artisan config:clear` di server; cek `storage/logs/laravel.log` |
-| Asset kosong | Pastikan workflow `npm run build` sukses; folder `public/build` ikut ter-sync |
-| `.env` hilang | Deploy **tidak** mengirim `.env` — buat manual di server |
+| `php` tidak dikenali via SSH | Set `SIFEEDER_PHP=C:\laragon\bin\php\php-8.2.x\php.exe` di Environment Variables user |
+| `composer` / `npm` tidak dikenali | Pastikan Laragon terinstall; atau set `SIFEEDER_COMPOSER` / `SIFEEDER_NPM` |
+| 500 / permission | Pastikan `storage` dan `bootstrap\cache` bisa ditulis user yang menjalankan PHP |
+| CSS hilang | Jalankan `npm run build`; cek folder `public\build` |
+| SSH ditolak | OpenSSH Server aktif; firewall port 22; user punya hak login |
+| `git pull` gagal (repo private) | Credential Manager atau deploy key read-only |
+
+---
 
 ## CI
 
-Workflow `ci.yml` menjalankan `php artisan test` pada PR/push ke `main`.
+Workflow `ci.yml` menjalankan `php artisan test` di GitHub (Linux runner) saat push/PR ke `main`.
+
+---
+
+## Linux (opsional)
+
+Skrip bash lama tetap ada: `deploy/remote-post-deploy.sh`, `deploy/nginx.conf.example` — untuk server Linux jika suatu saat dipindah.
