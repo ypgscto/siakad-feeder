@@ -7,6 +7,7 @@ use App\Services\AcademicFilterResolver;
 use App\Services\Feeder\FeederClient;
 use App\Services\SiakadApiService;
 use App\Services\Sync\MahasiswaFeederService;
+use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -122,15 +123,7 @@ class MahasiswaController extends Controller
 
         $redirect = redirect()->route('admin.mahasiswa.index', array_merge($filters, ['load' => 1]));
 
-        if ($success = $result->flashSuccess()) {
-            $redirect = $redirect->with('success', "{$label}: {$success}");
-        }
-
-        if ($failed = $result->flashError()) {
-            $redirect = $redirect->with('error', "{$label}: {$failed}");
-        }
-
-        return $redirect;
+        return SyncFlash::apply($redirect, $result, $label, 'mahasiswa');
     }
 
     /**

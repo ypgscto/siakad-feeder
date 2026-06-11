@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Concerns\LoadsAcademicMaster;
 use App\Http\Controllers\Controller;
 use App\Services\SiakadApiService;
 use App\Services\Sync\KelasFeederService;
+use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -235,6 +236,7 @@ class KelasController extends Controller
             $a->failedCount + $b->failedCount,
             array_merge($a->successMessages, $b->successMessages),
             array_merge($a->errorCounts, $b->errorCounts),
+            array_merge($a->failedItems, $b->failedItems),
         );
     }
 
@@ -250,13 +252,6 @@ class KelasController extends Controller
     ): RedirectResponse {
         $redirect = redirect()->route($route, array_merge($filters, ['load' => 1], $extra));
 
-        if ($success = $result->flashSuccess()) {
-            $redirect = $redirect->with('success', "{$label}: {$success}");
-        }
-        if ($failed = $result->flashError()) {
-            $redirect = $redirect->with('error', "{$label}: {$failed}");
-        }
-
-        return $redirect;
+        return SyncFlash::apply($redirect, $result, $label, 'kelas');
     }
 }

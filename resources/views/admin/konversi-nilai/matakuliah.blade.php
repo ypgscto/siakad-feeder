@@ -20,6 +20,8 @@
             <a href="{{ route('admin.konversi-nilai.index', array_merge($filters, ['load' => 1])) }}" class="text-sm text-teal-700 hover:underline">← Daftar mahasiswa</a>
         </div>
 
+        <x-admin.module-tabs module="konversi-nilai" />
+
         @if ($error)
             <div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">{{ $error }}</div>
         @endif
@@ -44,6 +46,9 @@
                     Kirim Konversi ke Feeder
                 </button>
             </form>
+            <div class="mt-3 pt-3 border-t border-slate-100">
+                <x-admin.sync-log-link module="konversi-nilai" />
+            </div>
         </div>
 
         <div class="rounded-xl bg-white border border-slate-200 shadow-sm overflow-x-auto">

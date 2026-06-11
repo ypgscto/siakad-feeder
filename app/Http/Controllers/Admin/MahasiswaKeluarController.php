@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\AcademicFilterResolver;
 use App\Services\SiakadApiService;
 use App\Services\Sync\MahasiswaKeluarFeederService;
+use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -91,14 +92,7 @@ class MahasiswaKeluarController extends Controller
 
         $redirect = redirect()->route('admin.mahasiswa-keluar.index', array_merge($filters, ['load' => 1]));
 
-        if ($success = $result->flashSuccess()) {
-            $redirect = $redirect->with('success', "Kirim lulus/DO: {$success}");
-        }
-        if ($failed = $result->flashError()) {
-            $redirect = $redirect->with('error', "Kirim lulus/DO: {$failed}");
-        }
-
-        return $redirect;
+        return SyncFlash::apply($redirect, $result, 'Kirim lulus/DO', 'mahasiswa-keluar');
     }
 
     /**

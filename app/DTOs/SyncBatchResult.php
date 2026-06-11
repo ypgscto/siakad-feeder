@@ -7,13 +7,25 @@ final class SyncBatchResult
     /**
      * @param  list<string>  $successMessages
      * @param  array<string, int>  $errorCounts
+     * @param  list<array{subject: string, message: string}>  $failedItems
      */
     public function __construct(
         public int $successCount = 0,
         public int $failedCount = 0,
         public array $successMessages = [],
         public array $errorCounts = [],
+        public array $failedItems = [],
     ) {}
+
+    public function recordFailure(string $subject, string $message): void
+    {
+        $this->failedCount++;
+        $this->errorCounts[$message] = ($this->errorCounts[$message] ?? 0) + 1;
+        $this->failedItems[] = [
+            'subject' => $subject,
+            'message' => $message,
+        ];
+    }
 
     /**
      * @return list<string>

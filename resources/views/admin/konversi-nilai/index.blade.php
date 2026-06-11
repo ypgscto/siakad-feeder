@@ -7,6 +7,8 @@
             </p>
         </div>
 
+        <x-admin.module-tabs module="konversi-nilai" />
+
         @if ($error)
             <div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">{{ $error }}</div>
         @endif
@@ -59,6 +61,10 @@
         </form>
 
         @if ($loaded)
+            <div class="flex justify-end mb-2">
+                <x-admin.sync-log-link module="konversi-nilai" />
+            </div>
+
             <div class="rounded-xl bg-white border border-slate-200 shadow-sm overflow-x-auto">
                 <p class="px-4 py-3 text-sm text-slate-600 border-b">{{ count($students) }} mahasiswa dengan KRS konversi</p>
                 <table class="min-w-full text-sm">

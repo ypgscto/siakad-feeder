@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\LoadsAcademicMaster;
 use App\Http\Controllers\Controller;
 use App\Services\SiakadApiService;
 use App\Services\Sync\NilaiFeederService;
+use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -133,13 +134,7 @@ class NilaiController extends Controller
         }
 
         $redirect = redirect()->route('admin.nilai.peserta', $validated);
-        if ($success = $result->flashSuccess()) {
-            $redirect = $redirect->with('success', "Kirim nilai: {$success}");
-        }
-        if ($failed = $result->flashError()) {
-            $redirect = $redirect->with('error', "Kirim nilai: {$failed}");
-        }
 
-        return $redirect;
+        return SyncFlash::apply($redirect, $result, 'Kirim nilai', 'nilai');
     }
 }

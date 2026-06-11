@@ -82,8 +82,10 @@ class KelasFeederService
         $idKelas = $this->lookup->idKelasKuliah($tahunId, $mkKode, $namaKelas);
 
         if ($idKelas === null) {
-            $result->failedCount++;
-            $result->errorCounts['ID kelas kuliah tidak ditemukan di Feeder. Kirim kelas terlebih dahulu.'] = 1;
+            $result->recordFailure(
+                "{$mkKode} / {$namaKelas}",
+                'ID kelas kuliah tidak ditemukan di Feeder. Kirim kelas terlebih dahulu.',
+            );
 
             return $result;
         }
@@ -135,8 +137,10 @@ class KelasFeederService
         $idRegDosen = $this->lookup->idRegistrasiDosenByNidn($nidn);
 
         if ($idKelas === null || $idRegDosen === null) {
-            $result->failedCount++;
-            $result->errorCounts['ID kelas kuliah atau registrasi dosen tidak ditemukan di Feeder.'] = 1;
+            $result->recordFailure(
+                "{$mkKode} / {$namaKelas} ({$nidn})",
+                'ID kelas kuliah atau registrasi dosen tidak ditemukan di Feeder.',
+            );
 
             return $result;
         }
@@ -178,8 +182,7 @@ class KelasFeederService
         string $message,
         ?array $feederResponse = null,
     ): void {
-        $result->failedCount++;
-        $result->errorCounts[$message] = ($result->errorCounts[$message] ?? 0) + 1;
+        $result->recordFailure($key, $message);
 
         FeederSyncLog::query()->create([
             'sync_type' => $syncType,

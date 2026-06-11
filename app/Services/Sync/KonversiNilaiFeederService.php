@@ -102,8 +102,7 @@ class KonversiNilaiFeederService
         string $message,
         ?array $feederResponse = null,
     ): void {
-        $result->failedCount++;
-        $result->errorCounts[$message] = ($result->errorCounts[$message] ?? 0) + 1;
+        $result->recordFailure($label, $message);
 
         FeederSyncLog::query()->create([
             'sync_type' => 'nilai_konversi',

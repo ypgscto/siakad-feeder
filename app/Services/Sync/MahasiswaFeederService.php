@@ -45,29 +45,29 @@ class MahasiswaFeederService
             }
 
             $idMahasiswa = $this->findIdMahasiswaByNik($nik);
+            $biodataRecord = null;
 
             if ($idMahasiswa === null) {
+                $biodataRecord = $this->buildBiodataRecord($student, $handphone);
+
                 try {
-                    $biodata = $this->feeder->callXml(
-                        'InsertBiodataMahasiswa',
-                        $this->buildBiodataRecord($student, $handphone),
-                    );
+                    $biodata = $this->feeder->callXml('InsertBiodataMahasiswa', $biodataRecord);
                 } catch (RuntimeException $e) {
-                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', $this->formatBiodataError($e->getMessage(), $handphone), handphone: $handphone);
+                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', $this->formatBiodataError($e->getMessage(), $handphone), handphone: $handphone, record: $biodataRecord);
 
                     continue;
                 }
 
                 if (! FeederResponseParser::isSuccess($biodata)) {
                     $message = FeederResponseParser::errorDescription($biodata);
-                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', $this->formatBiodataError($message, $handphone), $biodata, $handphone);
+                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', $this->formatBiodataError($message, $handphone), $biodata, $handphone, $biodataRecord);
 
                     continue;
                 }
 
                 $idMahasiswa = (string) ($biodata['data']['id_mahasiswa'] ?? '');
                 if ($idMahasiswa === '') {
-                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', 'id_mahasiswa tidak ada di respons Feeder.', $biodata, $handphone);
+                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', 'id_mahasiswa tidak ada di respons Feeder.', $biodata, $handphone, $biodataRecord);
 
                     continue;
                 }
@@ -77,20 +77,23 @@ class MahasiswaFeederService
                 $riwayatRecord = $this->buildRiwayatRecord($student, $statusAwalId, $idMahasiswa);
                 $riwayat = $this->feeder->callXml('InsertRiwayatPendidikanMahasiswa', $riwayatRecord);
             } catch (RuntimeException $e) {
-                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', $e->getMessage());
+                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', $e->getMessage(), record: $riwayatRecord ?? null);
 
                 continue;
             }
 
             if (! FeederResponseParser::isSuccess($riwayat)) {
-                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', FeederResponseParser::errorDescription($riwayat), $riwayat);
+                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', FeederResponseParser::errorDescription($riwayat), $riwayat, record: $riwayatRecord);
 
                 continue;
             }
 
             $result->successCount++;
             $result->successMessages[] = "NIM {$nim}: biodata + riwayat OK";
-            $this->logSuccess('mahasiswa_biodata_riwayat', $nim, $statusAwalId);
+            $this->logSuccess('mahasiswa_biodata_riwayat', $nim, $statusAwalId, [
+                'biodata' => $biodataRecord,
+                'riwayat' => $riwayatRecord,
+            ]);
         }
 
         return $result;
@@ -120,20 +123,20 @@ class MahasiswaFeederService
                 $record = $this->buildRiwayatRecord($student, $statusAwalId, $idMahasiswa);
                 $response = $this->feeder->callXml('InsertRiwayatPendidikanMahasiswa', $record);
             } catch (RuntimeException $e) {
-                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', $e->getMessage());
+                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', $e->getMessage(), record: $record ?? null);
 
                 continue;
             }
 
             if (! FeederResponseParser::isSuccess($response)) {
-                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', FeederResponseParser::errorDescription($response), $response);
+                $this->fail($result, $nim, 'InsertRiwayatPendidikanMahasiswa', FeederResponseParser::errorDescription($response), $response, record: $record);
 
                 continue;
             }
 
             $result->successCount++;
             $result->successMessages[] = "NIM {$nim}: riwayat OK";
-            $this->logSuccess('mahasiswa_riwayat', $nim, $statusAwalId);
+            $this->logSuccess('mahasiswa_riwayat', $nim, $statusAwalId, $record);
         }
 
         return $result;
@@ -160,26 +163,27 @@ class MahasiswaFeederService
 
             try {
                 $record = $this->buildRiwayatRecord($student, $statusAwalId, null, forUpdate: true);
-                $response = $this->feeder->callXmlBody([
+                $payload = [
                     'act' => 'UpdateRiwayatPendidikanMahasiswa',
                     'key' => ['id_registrasi_mahasiswa' => $idRegistrasi],
                     'record' => $record,
-                ]);
+                ];
+                $response = $this->feeder->callXmlBody($payload);
             } catch (RuntimeException $e) {
-                $this->fail($result, $nim, 'UpdateRiwayatPendidikanMahasiswa', $e->getMessage());
+                $this->fail($result, $nim, 'UpdateRiwayatPendidikanMahasiswa', $e->getMessage(), record: isset($payload) ? $payload : null);
 
                 continue;
             }
 
             if (! FeederResponseParser::isSuccess($response)) {
-                $this->fail($result, $nim, 'UpdateRiwayatPendidikanMahasiswa', FeederResponseParser::errorDescription($response), $response);
+                $this->fail($result, $nim, 'UpdateRiwayatPendidikanMahasiswa', FeederResponseParser::errorDescription($response), $response, record: $payload);
 
                 continue;
             }
 
             $result->successCount++;
             $result->successMessages[] = "NIM {$nim}: update riwayat OK";
-            $this->logSuccess('mahasiswa_riwayat_update', $nim, $statusAwalId);
+            $this->logSuccess('mahasiswa_riwayat_update', $nim, $statusAwalId, $payload);
         }
 
         return $result;
@@ -356,13 +360,16 @@ class MahasiswaFeederService
         string $message,
         ?array $feederResponse = null,
         ?string $handphone = null,
+        null|array $record = null,
     ): void {
-        $result->failedCount++;
-        $result->errorCounts[$message] = ($result->errorCounts[$message] ?? 0) + 1;
+        $result->recordFailure($nim, $message);
 
         $payload = ['nim' => $nim];
         if ($handphone !== null && $handphone !== '') {
             $payload['handphone'] = $handphone;
+        }
+        if ($record !== null) {
+            $payload['record'] = $record;
         }
 
         FeederSyncLog::query()->create([
@@ -375,14 +382,23 @@ class MahasiswaFeederService
         ]);
     }
 
-    protected function logSuccess(string $syncType, string $nim, string $statusAwalId): void
+    /**
+     * @param  array<string, mixed>|null  $record
+     */
+    protected function logSuccess(string $syncType, string $nim, string $statusAwalId, ?array $record = null): void
     {
+        $payload = [
+            'nim' => $nim,
+            'status_awal_id' => $statusAwalId,
+        ];
+
+        if ($record !== null) {
+            $payload['record'] = $record;
+        }
+
         FeederSyncLog::query()->create([
             'sync_type' => $syncType,
-            'payload_summary' => [
-                'nim' => $nim,
-                'status_awal_id' => $statusAwalId,
-            ],
+            'payload_summary' => $payload,
             'success' => true,
             'user_id' => Auth::id(),
         ]);

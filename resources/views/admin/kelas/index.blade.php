@@ -5,6 +5,8 @@
             <p class="text-sm text-slate-500 mt-1">Data jadwal dari Siakad-API · Kirim kelas ke Neo Feeder</p>
         </div>
 
+        <x-admin.module-tabs module="kelas" />
+
         @if ($error)<div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">{{ $error }}</div>@endif
 
         <x-admin.prodi-tahun-filter :action="route('admin.kelas.index')" :filters="$filters" :master="$master" />
@@ -20,6 +22,9 @@
                     <template x-for="k in selected" :key="k"><input type="hidden" name="class_keys[]" :value="k"></template>
                     <button type="submit" class="px-3 py-2 bg-teal-600 text-white text-xs font-semibold rounded-lg hover:bg-teal-700">Kirim Kelas ke Feeder</button>
                 </form>
+                <div class="mt-3 pt-3 border-t border-slate-100">
+                    <x-admin.sync-log-link module="kelas" />
+                </div>
             </div>
 
             <div class="rounded-xl bg-white border border-slate-200 shadow-sm overflow-x-auto">

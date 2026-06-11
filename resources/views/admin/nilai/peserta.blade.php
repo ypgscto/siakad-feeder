@@ -8,6 +8,8 @@
             <a href="{{ route('admin.nilai.index', array_merge($filters, ['load' => 1])) }}" class="text-sm text-teal-700 hover:underline">← Daftar kelas</a>
         </div>
 
+        <x-admin.module-tabs module="nilai" />
+
         @if ($error)<div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">{{ $error }}</div>@endif
 
         <div class="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
@@ -22,6 +24,9 @@
                 <template x-for="nim in selected" :key="nim"><input type="hidden" name="nims[]" :value="nim"></template>
                 <button type="submit" class="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700">Kirim Nilai ke Feeder</button>
             </form>
+            <div class="mt-3 pt-3 border-t border-slate-100">
+                <x-admin.sync-log-link module="nilai" />
+            </div>
         </div>
 
         <div class="rounded-xl bg-white border border-slate-200 shadow-sm overflow-x-auto">

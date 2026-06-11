@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\AcademicFilterResolver;
 use App\Services\SiakadApiService;
 use App\Services\Sync\KonversiNilaiFeederService;
+use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -137,14 +138,7 @@ class KonversiNilaiController extends Controller
 
         $redirect = $this->redirectMatakuliah($validated, $filters, (string) ($validated['nama'] ?? ''));
 
-        if ($success = $result->flashSuccess()) {
-            $redirect = $redirect->with('success', "Kirim konversi nilai: {$success}");
-        }
-        if ($failed = $result->flashError()) {
-            $redirect = $redirect->with('error', "Kirim konversi nilai: {$failed}");
-        }
-
-        return $redirect;
+        return SyncFlash::apply($redirect, $result, 'Kirim konversi nilai', 'konversi-nilai');
     }
 
     /**

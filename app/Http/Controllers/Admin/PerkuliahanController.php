@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\AcademicFilterResolver;
 use App\Services\SiakadApiService;
 use App\Services\Sync\PerkuliahanFeederService;
+use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -84,14 +85,7 @@ class PerkuliahanController extends Controller
 
         $redirect = redirect()->route('admin.perkuliahan.index', array_merge($filters, ['load' => 1]));
 
-        if ($success = $result->flashSuccess()) {
-            $redirect = $redirect->with('success', "Kirim aktivitas kuliah: {$success}");
-        }
-        if ($failed = $result->flashError()) {
-            $redirect = $redirect->with('error', "Kirim aktivitas kuliah: {$failed}");
-        }
-
-        return $redirect;
+        return SyncFlash::apply($redirect, $result, 'Kirim aktivitas kuliah', 'perkuliahan');
     }
 
     /**

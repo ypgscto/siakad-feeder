@@ -20,6 +20,8 @@
             </p>
         </div>
 
+        <x-admin.module-tabs module="mahasiswa" />
+
         @if ($error)
             <div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">{{ $error }}</div>
         @endif
@@ -118,6 +120,10 @@
                 </div>
                 <p class="text-xs text-slate-400 mt-2" x-show="selected.length > 0" x-cloak>
                     <span x-text="selected.length"></span> baris terpilih · kosongkan centang = kirim semua filter
+                </p>
+                <p class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+                    Log kirim:
+                    <x-admin.sync-log-link module="mahasiswa" class="ml-1" />
                 </p>
             </div>
 

@@ -17,6 +17,8 @@
             </p>
         </div>
 
+        <x-admin.module-tabs module="perkuliahan" />
+
         @if ($error)
             <div class="rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">{{ $error }}</div>
         @endif
@@ -77,6 +79,9 @@
                         Kirim Aktivitas Kuliah ke Feeder
                     </button>
                 </form>
+                <div class="mt-3 pt-3 border-t border-slate-100">
+                    <x-admin.sync-log-link module="perkuliahan" />
+                </div>
             </div>
 
             <div class="rounded-xl bg-white border border-slate-200 shadow-sm overflow-x-auto">
