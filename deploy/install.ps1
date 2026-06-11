@@ -1,11 +1,7 @@
-# Siakad-Feeder — INSTALASI PERTAMA di server Windows (Apache).
+# Siakad-Feeder - INSTALASI PERTAMA di server Windows (Apache).
 #
 #   cd C:\webserver\www\siakad-feeder
 #   powershell -ExecutionPolicy Bypass -File deploy\install.ps1
-#
-# Folder belum ada? Clone dulu:
-#   cd C:\webserver\www
-#   git clone https://github.com/ypgscto/siakad-feeder.git siakad-feeder
 #
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "lib\common.ps1")
@@ -14,7 +10,7 @@ Set-Location $script:DeployAppDir
 
 Write-Host ""
 Write-Host "========================================"
-Write-Host " Siakad-Feeder — INSTALASI PERTAMA"
+Write-Host " Siakad-Feeder - INSTALASI PERTAMA"
 Write-Host "========================================"
 Write-Host "Folder: $script:DeployAppDir"
 Write-Host ""
@@ -31,7 +27,7 @@ Sync-DeployFromGitHub
 
 Write-DeployStep 2 $total "Siapkan .env"
 if (Test-Path ".env") {
-    Write-DeployOk ".env sudah ada — tidak ditimpa"
+    Write-DeployOk ".env sudah ada - tidak ditimpa"
 } elseif (Test-Path ".env.example") {
     Copy-Item ".env.example" ".env"
     Write-DeployOk ".env dibuat dari .env.example"

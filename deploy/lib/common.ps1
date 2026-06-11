@@ -1,4 +1,4 @@
-# Library bersama — dot-source dari install.ps1 / update.ps1
+# Library bersama - dot-source dari install.ps1 / update.ps1
 $ErrorActionPreference = "Stop"
 
 $script:DeployAppDir = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
@@ -14,7 +14,7 @@ function Write-DeployStep {
 }
 
 function Write-DeployOk([string]$Message) {
-    Write-Host "  OK — $Message" -ForegroundColor Green
+    Write-Host "  OK - $Message" -ForegroundColor Green
 }
 
 function Write-DeployWarn([string]$Message) {
@@ -169,7 +169,7 @@ Lalu restart Apache dan jalankan ulang skrip deploy.
 function Initialize-DeployGitRepo {
   if (Test-Path (Join-Path $script:DeployAppDir ".git")) { return }
 
-  Write-DeployWarn "Folder belum punya .git — inisialisasi ke GitHub"
+  Write-DeployWarn "Folder belum punya .git - inisialisasi ke GitHub"
   Set-Location $script:DeployAppDir
   Invoke-DeployCommand "git" @("init")
   $remotes = & git remote 2>$null
@@ -186,7 +186,7 @@ function Sync-DeployFromGitHub {
 
     Write-Host "  >> git fetch origin $($script:DeployGitBranch)"
     & git fetch origin $script:DeployGitBranch
-    if ($LASTEXITCODE -ne 0) { throw "git fetch gagal — cek koneksi internet & akses GitHub" }
+    if ($LASTEXITCODE -ne 0) { throw 'git fetch gagal - cek koneksi internet dan akses GitHub' }
 
     Write-Host "  >> git checkout -B $($script:DeployGitBranch) origin/$($script:DeployGitBranch)"
     & git checkout -B $script:DeployGitBranch "origin/$($script:DeployGitBranch)"
@@ -238,7 +238,7 @@ function Invoke-DeployBuild {
     Invoke-DeployCommand $Npm @("run", "build")
 
     if (-not (Test-Path (Join-Path $script:DeployAppDir "public\build\manifest.json"))) {
-        throw "public/build/manifest.json tidak ada — npm run build gagal"
+        throw "public/build/manifest.json tidak ada - npm run build gagal"
     }
     Write-DeployOk "Asset Vite ter-build"
 
@@ -266,7 +266,7 @@ function Show-DeployFinishMessage {
 
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Green
-    Write-Host " Deploy selesai — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Green
+    Write-Host " Deploy selesai - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "Tes di browser:"
@@ -275,7 +275,7 @@ function Show-DeployFinishMessage {
     Write-Host ""
     if ($IsFreshInstall) {
         Write-Host "Langkah berikutnya:"
-        Write-Host "  1. Edit .env — APP_URL, SIAKAD_API_*, FEEDER_*"
+        Write-Host "  1. Edit .env - APP_URL, SIAKAD_API_*, FEEDER_*"
         Write-Host "  2. php artisan config:cache"
         Write-Host "  3. Login: admin@gmail.com / 123456"
         Write-Host "  4. Menu Pengaturan Koneksi"
