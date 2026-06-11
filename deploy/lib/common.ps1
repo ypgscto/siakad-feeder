@@ -101,7 +101,7 @@ function Invoke-DeployCommand {
     Write-Host "  >> $Executable $($Arguments -join ' ')" -ForegroundColor DarkGray
     & $Executable @Arguments
     if ($LASTEXITCODE -ne 0) {
-        throw "Perintah gagal (exit $LASTEXITCODE): $Executable $($Arguments -join ' ')"
+        throw "Perintah gagal, exit code $LASTEXITCODE`: $Executable $($Arguments -join ' ')"
     }
 }
 
@@ -294,7 +294,7 @@ function Ensure-DeployMysqlDatabase {
 
     $dbName = Read-DeployEnvValue "DB_DATABASE"
     if ($dbName -eq "") {
-        throw "DB_DATABASE kosong di .env (contoh: siakad_feeder)"
+        throw 'DB_DATABASE kosong di .env — contoh: siakad_feeder'
     }
 
     $dbHost = Read-DeployEnvValue "DB_HOST"
@@ -313,7 +313,7 @@ function Ensure-DeployMysqlDatabase {
     try {
         & $mysql "-h$dbHost" "-P$port" "-u$user" "-e" $sql
         if ($LASTEXITCODE -ne 0) {
-            throw "mysql gagal membuat database $dbName (exit $LASTEXITCODE)"
+            throw "mysql gagal membuat database $dbName, exit code $LASTEXITCODE"
         }
         Write-DeployOk "Database MySQL: $dbName"
     } finally {
@@ -416,7 +416,7 @@ function Sync-DeployFromGitHub {
     & git reset --hard "origin/$($script:DeployGitBranch)"
     if ($LASTEXITCODE -ne 0) { throw "git reset gagal" }
 
-    Write-Host "  >> git clean -fd (kecuali .env, database, storage)"
+    Write-Host '  >> git clean -fd (kecuali .env, database, storage)'
     & git clean -fd `
         -e .env `
         -e "database/database.sqlite" `
