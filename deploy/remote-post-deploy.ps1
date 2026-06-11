@@ -5,12 +5,9 @@ $ErrorActionPreference = "Stop"
 $AppDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $AppDir
 
-function Get-LaragonRoot {
-    if ($env:LARAGON_ROOT -and (Test-Path $env:LARAGON_ROOT)) {
-        return $env:LARAGON_ROOT
-    }
-
-    return "C:\laragon"
+function Get-ToolRoots {
+    return @($env:LARAGON_ROOT, "C:\laragon", "C:\webserver", "C:\xampp") |
+        Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique
 }
 
 function Get-DeployPhp {
@@ -18,13 +15,13 @@ function Get-DeployPhp {
         return $env:SIFEEDER_PHP
     }
 
-    $laragon = Get-LaragonRoot
-    $php = Get-ChildItem -Path "$laragon\bin\php\*\php.exe" -ErrorAction SilentlyContinue |
-        Sort-Object { $_.Directory.Name } -Descending |
-        Select-Object -First 1
-
-    if ($php) {
-        return $php.FullName
+    foreach ($root in Get-ToolRoots) {
+        $php = Get-ChildItem -Path "$root\bin\php\*\php.exe" -ErrorAction SilentlyContinue |
+            Sort-Object { $_.Directory.Name } -Descending |
+            Select-Object -First 1
+        if ($php) {
+            return $php.FullName
+        }
     }
 
     return "php"
@@ -35,10 +32,11 @@ function Get-DeployComposer {
         return $env:SIFEEDER_COMPOSER
     }
 
-    $laragon = Get-LaragonRoot
-    $composerBat = Join-Path $laragon "bin\composer\composer.bat"
-    if (Test-Path $composerBat) {
-        return $composerBat
+    foreach ($root in Get-ToolRoots) {
+        $composerBat = Join-Path $root "bin\composer\composer.bat"
+        if (Test-Path $composerBat) {
+            return $composerBat
+        }
     }
 
     return "composer"
@@ -49,12 +47,12 @@ function Get-DeployNpm {
         return $env:SIFEEDER_NPM
     }
 
-    $laragon = Get-LaragonRoot
-    $npm = Get-ChildItem -Path "$laragon\bin\nodejs\*\npm.cmd" -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-
-    if ($npm) {
-        return $npm.FullName
+    foreach ($root in Get-ToolRoots) {
+        $npm = Get-ChildItem -Path "$root\bin\nodejs\*\npm.cmd" -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($npm) {
+            return $npm.FullName
+        }
     }
 
     return "npm"
@@ -80,9 +78,11 @@ $npm = Get-DeployNpm
 Write-Host "App: $AppDir"
 Write-Host "PHP: $php"
 
+# .env tidak pernah dibuat/ditimpa oleh deploy — hanya setup awal (server-setup.ps1) atau manual.
 if (-not (Test-Path ".env")) {
-    throw ".env tidak ditemukan. Salin .env.example ke .env lalu jalankan: php artisan key:generate"
+    throw ".env tidak ditemukan. Buat sekali manual: copy .env.example .env lalu php artisan key:generate"
 }
+Write-Host ".env ditemukan — nilai existing tidak diubah oleh skrip deploy."
 
 $dirs = @(
     "storage\framework\cache",
@@ -107,6 +107,12 @@ Invoke-DeployCommand $composer @("install", "--no-dev", "--prefer-dist", "--no-i
 Invoke-DeployCommand $npm @("ci")
 Invoke-DeployCommand $npm @("run", "build")
 
+if (-not (Test-Path "public\build\manifest.json")) {
+    throw "public/build/manifest.json tidak ada setelah npm build — cek log npm di atas."
+}
+
+Invoke-DeployCommand $php @("artisan", "config:clear")
+Invoke-DeployCommand $php @("artisan", "view:clear")
 Invoke-DeployCommand $php @("artisan", "migrate", "--force")
 try {
     Invoke-DeployCommand $php @("artisan", "storage:link")

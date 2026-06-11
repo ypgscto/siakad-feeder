@@ -5,6 +5,14 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+$subdirBootstrap = __DIR__.'/../app/Support/SubdirectoryRequest.php';
+if (is_file($subdirBootstrap)) {
+    require_once $subdirBootstrap;
+    if (! App\Support\SubdirectoryRequest::applyFromEnvFile(__DIR__.'/../.env')) {
+        App\Support\SubdirectoryRequest::applyAutoDetect();
+    }
+}
+
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;

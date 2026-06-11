@@ -4,7 +4,7 @@
 
 Lokal dan server memakai **Windows** + **Laragon**. Deploy otomatis lewat GitHub Actions: SSH ke server → `git pull` → skrip PowerShell.
 
-> **Server baru / fresh install:** ikuti **[DEPLOY-FRESH-WINDOWS.md](./DEPLOY-FRESH-WINDOWS.md)** (termasuk update **Siakad-API** wajib).
+> **Deploy server Windows (API update + Feeder baru):** **[DEPLOY-SERVER-WINDOWS.md](./DEPLOY-SERVER-WINDOWS.md)**
 
 ## Ringkasan alur
 
@@ -14,6 +14,8 @@ Lokal dan server memakai **Windows** + **Laragon**. Deploy otomatis lewat GitHub
 4. `deploy/remote-post-deploy.ps1` — `composer install`, `npm run build`, `artisan migrate`, cache
 
 File **tidak** di-sync lewat rsync; server harus sudah punya clone Git + `.env` sendiri.
+
+**Deploy ulang tidak menimpa `.env`** — `.env` di-ignore Git; skrip `remote-post-deploy.ps1` hanya memeriksa bahwa file ada, tidak menyalin dari `.env.example`.
 
 ---
 
@@ -159,6 +161,8 @@ cd C:\laragon\www\siakad-feeder
 git pull origin main
 powershell -ExecutionPolicy Bypass -File deploy\remote-post-deploy.ps1
 ```
+
+Jangan jalankan `server-setup.ps1` atau `copy .env.example .env` untuk update rutin — itu hanya **setup pertama**.
 
 ---
 
