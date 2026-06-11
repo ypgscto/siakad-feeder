@@ -157,6 +157,7 @@ Setiap push ke `main`, workflow deploy via SSH.
 | Access denied `storage\framework\views` | `deploy\fix-permissions.ps1` (PowerShell as Administrator) |
 | No application encryption key | `php artisan key:generate --force` lalu `php artisan config:cache` |
 | HTTP 404 | Akses lewat `.../siakad-feeder/public/` |
+| Dashboard Siakad-API **Gagal** HTTP 400, curl manual OK | URL/token salah di tabel `settings` atau cache lama. Jalankan `deploy\fix-env-urls.ps1` lalu `php artisan sifeeder:sync-settings-from-env --force` dan `php artisan sifeeder:siakad-ping` |
 | `.env` hilang | Restore dari `.deploy-backup\env-*.bak` |
 
 ---

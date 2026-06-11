@@ -203,12 +203,16 @@ class IntegrationSettingsService
             }
 
             if ($key === 'siakad.api.base_url') {
-                $value = rtrim(trim((string) $value), '/');
-                if ($value !== '' && ! str_starts_with($value, 'http')) {
+                $value = $this->sanitizeApiBaseUrl((string) $value);
+                if ($value === '') {
                     throw new \InvalidArgumentException(
                         'Base URL Siakad-API harus diawali http:// atau https:// (bukan path folder server).',
                     );
                 }
+            }
+
+            if ($key === 'siakad.api.token') {
+                $value = $this->sanitizeToken((string) $value);
             }
 
             $this->set($key, $value);
@@ -254,10 +258,77 @@ class IntegrationSettingsService
                 }
             }
 
-            return $settings;
+            return $this->sanitizeAll($settings);
         });
 
         return $this->runtimeCache;
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     * @return array<string, mixed>
+     */
+    protected function sanitizeAll(array $settings): array
+    {
+        if (isset($settings['siakad.api.base_url'])) {
+            $url = $this->sanitizeApiBaseUrl((string) $settings['siakad.api.base_url']);
+            if ($url === '') {
+                $url = $this->sanitizeApiBaseUrl((string) env('SIAKAD_API_BASE_URL', ''));
+            }
+            $settings['siakad.api.base_url'] = $url;
+        }
+
+        if (isset($settings['siakad.api.token'])) {
+            $settings['siakad.api.token'] = $this->sanitizeToken((string) $settings['siakad.api.token']);
+        }
+
+        if (isset($settings['siakad.api.host'])) {
+            $settings['siakad.api.host'] = trim((string) $settings['siakad.api.host']);
+        }
+
+        return $settings;
+    }
+
+    public function sanitizeApiBaseUrl(string $url): string
+    {
+        $url = rtrim(trim($url), '/');
+
+        if ($url === '') {
+            return '';
+        }
+
+        if (str_contains($url, '\\') || preg_match('#^[A-Za-z]:[/\\\\]#', $url)) {
+            return '';
+        }
+
+        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            return '';
+        }
+
+        return $url;
+    }
+
+    public function sanitizeToken(string $token): string
+    {
+        return trim(preg_replace('/\s+/', '', $token) ?? '');
+    }
+
+    public function syncFromEnv(bool $force = false): void
+    {
+        Cache::forget(self::CACHE_KEY);
+        $this->runtimeCache = null;
+
+        $defaults = $this->defaultsFromEnv();
+        $keys = $force
+            ? array_keys($defaults)
+            : array_keys(array_filter($defaults, fn ($_, string $key) => ! $this->hasStored($key), ARRAY_FILTER_USE_BOTH));
+
+        foreach ($keys as $key) {
+            $this->set($key, $defaults[$key]);
+        }
+
+        Cache::forget(self::CACHE_KEY);
+        $this->runtimeCache = null;
     }
 
     /**
@@ -324,7 +395,12 @@ class IntegrationSettingsService
             } elseif ($definition['type'] === 'boolean') {
                 $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
             } elseif ($definition['type'] === 'string' && $key === 'siakad.api.base_url') {
-                $value = rtrim((string) $value, '/');
+                $value = $this->sanitizeApiBaseUrl((string) $value);
+                if ($value === '') {
+                    $value = $this->sanitizeApiBaseUrl((string) env('SIAKAD_API_BASE_URL', ''));
+                }
+            } elseif ($definition['type'] === 'string' && $key === 'siakad.api.token') {
+                $value = $this->sanitizeToken((string) $value);
             }
 
             foreach ($configKeys as $configKey) {

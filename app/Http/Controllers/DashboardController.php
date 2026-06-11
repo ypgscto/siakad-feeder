@@ -21,7 +21,12 @@ class DashboardController extends Controller
                 'message' => ($health['ok'] ?? false) ? 'Siakad-API terhubung' : 'Siakad-API tidak siap',
             ];
         } catch (RuntimeException $e) {
-            $siakadStatus = ['ok' => false, 'message' => $e->getMessage()];
+            $base = (string) config('siakad.base_url', '');
+            $message = $e->getMessage();
+            if ($base !== '' && ! str_contains($message, $base)) {
+                $message .= ' [URL aktif: '.$base.']';
+            }
+            $siakadStatus = ['ok' => false, 'message' => $message];
         }
 
         try {

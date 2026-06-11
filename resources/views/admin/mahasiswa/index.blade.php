@@ -137,6 +137,8 @@
                                 <th class="px-3 py-3">NIM</th>
                                 <th class="px-3 py-3">Nama</th>
                                 <th class="px-3 py-3">NIK</th>
+                                <th class="px-3 py-3">HP Siakad</th>
+                                <th class="px-3 py-3">HP ke Feeder</th>
                                 <th class="px-3 py-3">NISN</th>
                                 <th class="px-3 py-3">Prodi</th>
                                 <th class="px-3 py-3">Tahun</th>
@@ -157,6 +159,13 @@
                                     <td class="px-3 py-2 font-mono text-xs">{{ $nim ?: '-' }}</td>
                                     <td class="px-3 py-2">{{ $row['nama'] ?? '-' }}</td>
                                     <td class="px-3 py-2 font-mono text-xs">{{ $row['nik'] ?? '-' }}</td>
+                                    <td class="px-3 py-2 font-mono text-xs">{{ $row['handphone'] ?? '-' }}</td>
+                                    <td class="px-3 py-2 font-mono text-xs text-teal-700">
+                                        {{ \App\Support\Feeder\HandphoneNormalizer::forFeeder(
+                                            (string) ($row['handphone'] ?? ''),
+                                            (string) ($row['nim'] ?? $row['mhsw_id'] ?? ''),
+                                        ) }}
+                                    </td>
                                     <td class="px-3 py-2 font-mono text-xs">{{ $row['nisn_placeholder'] ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row['prodi_id'] ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row['tahun_id'] ?? '-' }}</td>
@@ -167,7 +176,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="px-4 py-8 text-center text-slate-500">Tidak ada data untuk filter ini.</td>
+                                    <td colspan="11" class="px-4 py-8 text-center text-slate-500">Tidak ada data untuk filter ini.</td>
                                 </tr>
                             @endforelse
                         </tbody>

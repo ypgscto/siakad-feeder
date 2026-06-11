@@ -9,6 +9,7 @@ use App\Services\Feeder\FeederCodeMapService;
 use App\Services\Feeder\FeederProdiMapService;
 use App\Models\FeederCodeMap;
 use App\Support\Feeder\FeederResponseParser;
+use App\Support\Feeder\HandphoneNormalizer;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
@@ -31,26 +32,43 @@ class MahasiswaFeederService
 
         foreach ($students as $student) {
             $nim = $this->nim($student);
+            $nik = (string) ($student['nik'] ?? '');
 
             try {
-                $biodata = $this->feeder->callXml('InsertBiodataMahasiswa', $this->buildBiodataRecord($student));
+                $handphone = $this->resolveHandphone($student);
             } catch (RuntimeException $e) {
                 $this->fail($result, $nim, 'InsertBiodataMahasiswa', $e->getMessage());
 
                 continue;
             }
 
-            if (! FeederResponseParser::isSuccess($biodata)) {
-                $this->fail($result, $nim, 'InsertBiodataMahasiswa', FeederResponseParser::errorDescription($biodata), $biodata);
+            $idMahasiswa = $this->findIdMahasiswaByNik($nik);
 
-                continue;
-            }
+            if ($idMahasiswa === null) {
+                try {
+                    $biodata = $this->feeder->callXml(
+                        'InsertBiodataMahasiswa',
+                        $this->buildBiodataRecord($student, $handphone),
+                    );
+                } catch (RuntimeException $e) {
+                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', $this->formatBiodataError($e->getMessage(), $handphone), handphone: $handphone);
 
-            $idMahasiswa = (string) ($biodata['data']['id_mahasiswa'] ?? '');
-            if ($idMahasiswa === '') {
-                $this->fail($result, $nim, 'InsertBiodataMahasiswa', 'id_mahasiswa tidak ada di respons Feeder.', $biodata);
+                    continue;
+                }
 
-                continue;
+                if (! FeederResponseParser::isSuccess($biodata)) {
+                    $message = FeederResponseParser::errorDescription($biodata);
+                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', $this->formatBiodataError($message, $handphone), $biodata, $handphone);
+
+                    continue;
+                }
+
+                $idMahasiswa = (string) ($biodata['data']['id_mahasiswa'] ?? '');
+                if ($idMahasiswa === '') {
+                    $this->fail($result, $nim, 'InsertBiodataMahasiswa', 'id_mahasiswa tidak ada di respons Feeder.', $biodata, $handphone);
+
+                    continue;
+                }
             }
 
             try {
@@ -169,7 +187,7 @@ class MahasiswaFeederService
      * @param  array<string, mixed>  $student
      * @return array<string, mixed>
      */
-    public function buildBiodataRecord(array $student): array
+    public function buildBiodataRecord(array $student, ?string $handphone = null): array
     {
         $agamaNama = (string) ($student['agama_nama'] ?? '');
         $idAgama = $this->codeMaps->resolve(FeederCodeMap::CATEGORY_AGAMA, $agamaNama, '0') ?? '0';
@@ -191,8 +209,55 @@ class MahasiswaFeederService
             'kecamatan' => config('feeder_maps.default_kecamatan'),
             'penerima_kps' => '0',
             'id_kebutuhan_khusus_mahasiswa' => '2',
-            'handphone' => config('feeder_maps.default_handphone'),
+            'handphone' => $handphone ?? $this->resolveHandphone($student),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $student
+     */
+    protected function resolveHandphone(array $student): string
+    {
+        $nik = (string) ($student['nik'] ?? '');
+        $raw = (string) ($student['handphone'] ?? $student['telepon'] ?? '');
+
+        foreach (HandphoneNormalizer::candidates($raw, $this->nim($student)) as $phone) {
+            if (! $this->isHandphoneUsedByOther($phone, $nik)) {
+                return $phone;
+            }
+        }
+
+        throw new RuntimeException(
+            'Nomor HP alternatif untuk NIM '.$this->nim($student).' sudah dipakai mahasiswa lain di Feeder.',
+        );
+    }
+
+    protected function isHandphoneUsedByOther(string $handphone, string $nik): bool
+    {
+        $escaped = str_replace("'", '', $handphone);
+        $rows = $this->feeder->getList('GetBiodataMahasiswa', "handphone = '{$escaped}'", 5);
+
+        if ($rows === []) {
+            return false;
+        }
+
+        if ($nik === '') {
+            return true;
+        }
+
+        foreach ($rows as $row) {
+            $existingNik = (string) ($row['nik'] ?? '');
+            if ($existingNik !== '' && $existingNik !== $nik) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function formatBiodataError(string $message, string $handphone): string
+    {
+        return $message.' [HP dikirim: '.$handphone.']';
     }
 
     /**
@@ -288,13 +353,19 @@ class MahasiswaFeederService
         string $syncType,
         string $message,
         ?array $feederResponse = null,
+        ?string $handphone = null,
     ): void {
         $result->failedCount++;
         $result->errorCounts[$message] = ($result->errorCounts[$message] ?? 0) + 1;
 
+        $payload = ['nim' => $nim];
+        if ($handphone !== null && $handphone !== '') {
+            $payload['handphone'] = $handphone;
+        }
+
         FeederSyncLog::query()->create([
             'sync_type' => $syncType,
-            'payload_summary' => ['nim' => $nim],
+            'payload_summary' => $payload,
             'feeder_error_code' => isset($feederResponse['error_code']) ? (int) $feederResponse['error_code'] : null,
             'feeder_error_desc' => $message,
             'success' => false,

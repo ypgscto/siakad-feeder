@@ -37,11 +37,11 @@ Test-ItemOk (Test-Path "storage\logs") "storage/logs writable" "pastikan folder 
 
 Write-Host ""
 Write-Host "--- PHP ---"
-$mods = & $php -m 2>$null
+$mods = @(& $php -m 2>$null)
 if ($dbConn -eq "mysql") {
-    Test-ItemOk ($mods -match '(?m)^pdo_mysql$') "ekstensi pdo_mysql" "aktifkan extension=php_pdo_mysql.dll di php.ini"
+    Test-ItemOk ($mods -contains 'pdo_mysql') "ekstensi pdo_mysql" "aktifkan extension=php_pdo_mysql.dll di php.ini"
 } elseif ($dbConn -eq "sqlite") {
-    Test-ItemOk ($mods -match '(?m)^pdo_sqlite$') "ekstensi pdo_sqlite" "atau ganti .env ke DB_CONNECTION=mysql"
+    Test-ItemOk ($mods -contains 'pdo_sqlite') "ekstensi pdo_sqlite" "atau ganti .env ke DB_CONNECTION=mysql"
 }
 
 Write-Host ""

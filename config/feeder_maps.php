@@ -25,7 +25,7 @@ return [
 
     'default_nisn' => '0000000000',
 
-    'default_handphone' => '000000000000',
+    'default_handphone' => env('FEEDER_DEFAULT_HANDPHONE', ''),
 
     'default_kelurahan' => 'Gunung Sari',
 

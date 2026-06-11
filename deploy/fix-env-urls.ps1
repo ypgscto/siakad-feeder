@@ -76,3 +76,7 @@ Write-Host ""
 Write-Host "Siakad-API di .env:" -ForegroundColor Cyan
 Write-Host "  SIAKAD_API_BASE_URL=http://98.142.245.18/siakad-api/public"
 Write-Host "  SIAKAD_API_TOKEN=<sama dengan siakad-api .env>"
+Write-Host ""
+Write-Host "Sinkron settings DB dari .env:"
+Write-Host "  php artisan sifeeder:sync-settings-from-env --force"
+Write-Host "  php artisan sifeeder:siakad-ping"
