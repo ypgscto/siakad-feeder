@@ -20,7 +20,7 @@ $composer = Get-DeployComposer
 $npm = Get-DeployNpm
 Write-Host "PHP: $php"
 
-$total = 3
+$total = 4
 
 Write-DeployStep 1 $total "Sinkron kode dari GitHub"
 Sync-DeployFromGitHub
@@ -28,5 +28,11 @@ Sync-DeployFromGitHub
 Write-DeployStep 2 $total "Build dan migrate"
 Invoke-DeployBuild -Php $php -Composer $composer -Npm $npm
 
-Write-DeployStep 3 $total "Selesai"
+Write-DeployStep 3 $total "Diagnosa"
+$diag = Join-Path $PSScriptRoot "diagnose.ps1"
+if (Test-Path $diag) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $diag
+}
+
+Write-DeployStep 4 $total "Selesai"
 Show-DeployFinishMessage

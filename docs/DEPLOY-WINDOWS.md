@@ -134,7 +134,7 @@ Setiap push ke `main`, workflow deploy via SSH.
 |--------|--------|
 | `git pull` konflik / overwrite | Pakai `deploy\update.ps1`, bukan `git pull` |
 | `could not find driver` (sqlite) | Otomatis di install/update; manual: `deploy\enable-php-sqlite.ps1` |
-| HTTP 500 | `deploy\update.ps1` — biasanya `npm build` belum jalan; cek `storage\logs\laravel.log` |
+| HTTP 500 | `deploy\diagnose.ps1` lalu `deploy\update.ps1`. Umum: migrate belum jalan, `manifest.json` hilang, `SESSION_DRIVER=database` tanpa tabel sessions |
 | HTTP 404 | Akses lewat `.../siakad-feeder/public/` |
 | `.env` hilang | Restore dari `.deploy-backup\env-*.bak` |
 

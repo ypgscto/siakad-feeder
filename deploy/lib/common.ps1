@@ -259,6 +259,14 @@ function Invoke-DeployBuild {
     Invoke-DeployCommand $Php @("artisan", "config:cache")
     Invoke-DeployCommand $Php @("artisan", "route:cache")
     Invoke-DeployCommand $Php @("artisan", "view:cache")
+
+    Write-Host ""
+    Write-Host "  >> Verifikasi cepat"
+    $about = & $Php artisan about --only=environment 2>&1 | Out-String
+    if ($about -match 'Error|Exception') {
+        throw "Laravel gagal bootstrap setelah deploy. Jalankan: deploy\diagnose.ps1"
+    }
+    Write-DeployOk "Laravel bootstrap OK"
 }
 
 function Show-DeployFinishMessage {
