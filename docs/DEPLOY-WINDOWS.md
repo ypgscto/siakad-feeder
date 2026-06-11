@@ -144,7 +144,9 @@ Setiap push ke `main`, workflow deploy via SSH.
 | `git pull` konflik / overwrite | Pakai `deploy\update.ps1`, bukan `git pull` |
 | `could not find driver` | Pastikan `.env` pakai `DB_CONNECTION=mysql` (bukan sqlite) |
 | `Unknown database` | Set `DB_DATABASE=siakad_feeder` lalu `deploy\update.ps1` |
-| HTTP 500 | `deploy\diagnose.ps1` lalu `deploy\update.ps1`. Umum: migrate belum jalan, `manifest.json` hilang, `SESSION_DRIVER=database` tanpa tabel sessions |
+| HTTP 500 | `deploy\diagnose.ps1` lalu `deploy\update.ps1` |
+| Access denied `storage\framework\views` | `deploy\fix-permissions.ps1` (PowerShell as Administrator) |
+| No application encryption key | `php artisan key:generate --force` lalu `php artisan config:cache` |
 | HTTP 404 | Akses lewat `.../siakad-feeder/public/` |
 | `.env` hilang | Restore dari `.deploy-backup\env-*.bak` |
 

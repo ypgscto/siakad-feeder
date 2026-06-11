@@ -123,6 +123,34 @@ function Ensure-DeployDirectories {
     }
 }
 
+function Ensure-DeployAppKey {
+    param([string]$Php)
+
+    $envPath = Join-Path $script:DeployAppDir ".env"
+    $raw = Get-Content $envPath -Raw
+    if ($raw -match 'APP_KEY=base64:[A-Za-z0-9+\/=]{20,}') {
+        Write-DeployOk "APP_KEY sudah ada"
+        return
+    }
+
+    Write-Host "  [FIX] APP_KEY kosong - jalankan key:generate" -ForegroundColor Yellow
+    & $Php artisan key:generate --force
+    if ($LASTEXITCODE -ne 0) { throw "php artisan key:generate gagal" }
+    Write-DeployOk "APP_KEY dibuat"
+}
+
+function Ensure-DeployStoragePermissions {
+    foreach ($rel in @("storage", "bootstrap\cache")) {
+        $path = Join-Path $script:DeployAppDir $rel
+        if (-not (Test-Path $path)) { continue }
+        Write-Host "  >> icacls $rel (Apache/PHP boleh tulis)" -ForegroundColor DarkGray
+        & icacls $path /grant "Everyone:(OI)(CI)M" /T /Q 2>$null
+        & icacls $path /grant "Users:(OI)(CI)M" /T /Q 2>$null
+        & icacls $path /grant "IIS_IUSRS:(OI)(CI)M" /T /Q 2>$null
+    }
+    Write-DeployOk "Izin folder storage dan bootstrap/cache"
+}
+
 function Test-PhpExtensionLoaded {
     param([string]$PhpExe, [string]$ExtensionName)
     $out = & $PhpExe -m 2>$null
@@ -408,6 +436,9 @@ function Invoke-DeployBuild {
         throw ".env tidak ada. Instalasi pertama: jalankan deploy\install.ps1"
     }
 
+    Ensure-DeployAppKey $Php
+    Ensure-DeployStoragePermissions
+
     Invoke-DeployCommand $Composer @("install", "--no-dev", "--prefer-dist", "--no-interaction", "--optimize-autoloader")
     Invoke-DeployCommand $Npm @("ci")
     Invoke-DeployCommand $Npm @("run", "build")
@@ -433,7 +464,9 @@ function Invoke-DeployBuild {
 
     Invoke-DeployCommand $Php @("artisan", "config:cache")
     Invoke-DeployCommand $Php @("artisan", "route:cache")
-    Invoke-DeployCommand $Php @("artisan", "view:cache")
+    # view:cache di-skip di Windows Apache (bisa bikin Access denied saat compile view)
+
+    Ensure-DeployStoragePermissions
 
     Write-Host ""
     Write-Host "  >> Verifikasi cepat"
