@@ -10,6 +10,7 @@ use App\Services\Feeder\FeederProdiMapService;
 use App\Models\FeederCodeMap;
 use App\Support\Feeder\FeederResponseParser;
 use App\Support\Feeder\HandphoneNormalizer;
+use App\Support\Feeder\TanggalDaftarResolver;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
@@ -285,7 +286,7 @@ class MahasiswaFeederService
         };
 
         $tahunId = (string) ($student['tahun_id'] ?? '');
-        $tanggalDaftar = substr($tahunId, 0, 4).'-09-01';
+        $tanggalDaftar = TanggalDaftarResolver::resolve($student);
 
         $record = [
             'id_jalur_daftar' => config('feeder_maps.id_jalur_daftar'),

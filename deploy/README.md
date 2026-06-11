@@ -77,4 +77,4 @@ Login default (setelah seed): `admin@gmail.com` / `123456`
 | `enable-php-sqlite.ps1` | tidak dipakai (MySQL) |
 | `fix-apache-production.ps1` | sama dengan `update.ps1` |
 
-Panduan lengkap: [docs/DEPLOY-WINDOWS.md](../docs/DEPLOY-WINDOWS.md)
+Panduan lengkap: [docs/DEPLOY-WINDOWS.md](../docs/DEPLOY-WINDOWS.md) · [docs/DEPLOY-RELEASE.md](../docs/DEPLOY-RELEASE.md)

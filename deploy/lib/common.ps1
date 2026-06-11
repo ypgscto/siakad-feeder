@@ -28,12 +28,26 @@ function Get-ToolRoots {
 
 function Get-DeployPhp {
     if ($env:SIFEEDER_PHP -and (Test-Path $env:SIFEEDER_PHP)) { return $env:SIFEEDER_PHP }
+
+    $candidates = @()
     foreach ($root in Get-ToolRoots) {
-        $php = Get-ChildItem "$root\bin\php\*\php.exe" -ErrorAction SilentlyContinue |
-            Sort-Object { $_.Directory.Name } -Descending | Select-Object -First 1
-        if ($php) { return $php.FullName }
+        $candidates += Get-ChildItem "$root\bin\php\*\php.exe" -ErrorAction SilentlyContinue
     }
-    return "php"
+
+    if ($candidates.Count -eq 0) {
+        return "php"
+    }
+
+    # Server production biasanya Apache pakai PHP 8.2 — jangan ambil 8.3 hanya karena folder namanya lebih "besar".
+    $php82 = $candidates |
+        Where-Object { $_.Directory.Name -match '^php-8\.2\.' } |
+        Sort-Object { $_.Directory.Name } -Descending |
+        Select-Object -First 1
+    if ($php82) {
+        return $php82.FullName
+    }
+
+    return ($candidates | Sort-Object { $_.Directory.Name } -Descending | Select-Object -First 1).FullName
 }
 
 function Get-DeployComposer {

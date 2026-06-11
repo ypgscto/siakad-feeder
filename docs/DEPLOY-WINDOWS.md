@@ -159,6 +159,7 @@ Setiap push ke `main`, workflow deploy via SSH.
 | HTTP 404 | Akses lewat `.../siakad-feeder/public/` |
 | Dashboard Siakad-API **Gagal** HTTP 400, curl manual OK | URL/token salah di tabel `settings` atau cache lama. Jalankan `deploy\fix-env-urls.ps1` lalu `php artisan sifeeder:sync-settings-from-env --force` dan `php artisan sifeeder:siakad-ping` |
 | `.env` hilang | Restore dari `.deploy-backup\env-*.bak` |
+| Deploy pakai **PHP 8.3** padahal Apache pakai **8.2** | Skrip `deploy\update.ps1` sekarang prioritaskan folder `php-8.2.*`. Atau set env: `SIFEEDER_PHP=C:\webserver\bin\php\php-8.2.xx\php.exe` |
 
 ---
 
@@ -175,4 +176,4 @@ powershell -ExecutionPolicy Bypass -File deploy\update.ps1
 
 ---
 
-Lihat juga: [deploy/README.md](../deploy/README.md)
+Lihat juga: [deploy/README.md](../deploy/README.md) · [DEPLOY-RELEASE.md](DEPLOY-RELEASE.md) (rilis HP + tanggal daftar)

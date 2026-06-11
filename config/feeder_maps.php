@@ -27,6 +27,16 @@ return [
 
     'default_handphone' => env('FEEDER_DEFAULT_HANDPHONE', ''),
 
+    /*
+    | Fallback tanggal_daftar jika TglKuliahMulai tidak ada di Siakad.
+    | TahunID genap (…2/…4) → Februari tahun berikutnya; ganjil → September.
+    */
+    'tanggal_daftar' => [
+        'ganjil' => env('FEEDER_TGL_DAFTAR_GANJIL', '09-01'),
+        'genap' => env('FEEDER_TGL_DAFTAR_GENAP', '02-01'),
+        'genap_year_offset' => (int) env('FEEDER_TGL_DAFTAR_GENAP_YEAR_OFFSET', 1),
+    ],
+
     'default_kelurahan' => 'Gunung Sari',
 
     'default_kecamatan' => 'Kec. Rappocini - Kota Makassar - Prov. Sulawesi Selatan',
