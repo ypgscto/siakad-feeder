@@ -154,7 +154,11 @@ class SiakadApiService
      */
     public function pingHealth(): array
     {
-        return $this->requestGet(SiakadConfig::endpointPath(SiakadResource::HEALTH));
+        return $this->requestGet(
+            SiakadConfig::endpointPath(SiakadResource::HEALTH),
+            [],
+            withToken: false,
+        );
     }
 
     /**
@@ -172,16 +176,16 @@ class SiakadApiService
      * @param  array<string, scalar|null>  $query
      * @return array<string, mixed>
      */
-    public function requestGet(string $endpoint, array $query = []): array
+    public function requestGet(string $endpoint, array $query = [], bool $withToken = true): array
     {
         if (SiakadConfig::baseUrl() === '') {
             throw new RuntimeException(
-                'SIAKAD_API_BASE_URL belum diatur di .env (config siakad.base_url).',
+                'SIAKAD_API_BASE_URL belum valid. Contoh: http://98.142.245.18/siakad-api/public',
             );
         }
 
         try {
-            $response = $this->httpClient()->get($endpoint, $query);
+            $response = $this->httpClient($withToken)->get($endpoint, $query);
             $response->throw();
 
             $json = $response->json();
@@ -203,13 +207,20 @@ class SiakadApiService
                 $e,
             );
         } catch (RequestException $e) {
+            $rawBody = (string) $e->response?->body();
             $body = $e->response?->json();
             $message = is_array($body)
                 ? (string) ($body['message'] ?? $e->getMessage())
                 : $e->getMessage();
 
+            if (str_contains($rawBody, '<html') || str_contains($rawBody, '<!DOCTYPE')) {
+                $status = (int) ($e->response?->status() ?? 0);
+                $message = "HTTP {$status} — URL Siakad-API salah. Set: http://98.142.245.18/siakad-api/public (bukan path folder C:\\...)";
+            }
+
             Log::error('Siakad-API request failed.', [
                 'endpoint' => $endpoint,
+                'base_url' => SiakadConfig::baseUrl(),
                 'status' => $e->response?->status(),
                 'message' => $message,
             ]);
@@ -222,13 +233,13 @@ class SiakadApiService
         }
     }
 
-    protected function httpClient()
+    protected function httpClient(bool $withToken = true)
     {
         $client = Http::timeout((int) config('siakad.timeout', 120))
             ->acceptJson()
             ->baseUrl(SiakadConfig::baseUrl());
 
-        if (SiakadConfig::token() !== '') {
+        if ($withToken && SiakadConfig::token() !== '') {
             $client = $client->withToken(SiakadConfig::token());
         }
 

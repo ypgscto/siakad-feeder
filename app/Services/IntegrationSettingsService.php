@@ -203,7 +203,12 @@ class IntegrationSettingsService
             }
 
             if ($key === 'siakad.api.base_url') {
-                $value = rtrim((string) $value, '/');
+                $value = rtrim(trim((string) $value), '/');
+                if ($value !== '' && ! str_starts_with($value, 'http')) {
+                    throw new \InvalidArgumentException(
+                        'Base URL Siakad-API harus diawali http:// atau https:// (bukan path folder server).',
+                    );
+                }
             }
 
             $this->set($key, $value);

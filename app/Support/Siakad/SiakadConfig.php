@@ -8,12 +8,26 @@ final class SiakadConfig
 {
     public static function baseUrl(): string
     {
-        return (string) config('siakad.base_url', '');
+        $url = rtrim(trim((string) config('siakad.base_url', '')), '/');
+
+        if ($url === '') {
+            return '';
+        }
+
+        if (str_contains($url, '\\') || preg_match('#^[A-Za-z]:[/\\\\]#', $url)) {
+            return '';
+        }
+
+        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            return '';
+        }
+
+        return $url;
     }
 
     public static function token(): string
     {
-        return (string) config('siakad.token', '');
+        return trim((string) config('siakad.token', ''));
     }
 
     public static function endpointPath(string $resourceKey): string

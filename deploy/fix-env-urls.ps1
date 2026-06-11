@@ -72,3 +72,7 @@ Write-Host "Selesai. Buka:" -ForegroundColor Green
 Write-Host "  $correctUrl/login"
 Write-Host ""
 Write-Host "JANGAN pakai path folder (C:\webserver\...) di APP_URL." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Siakad-API di .env:" -ForegroundColor Cyan
+Write-Host "  SIAKAD_API_BASE_URL=http://98.142.245.18/siakad-api/public"
+Write-Host "  SIAKAD_API_TOKEN=<sama dengan siakad-api .env>"
