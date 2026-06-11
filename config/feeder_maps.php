@@ -23,6 +23,8 @@ return [
 
     'default_email' => env('FEEDER_DEFAULT_EMAIL', 'yayasanpendidikan.gunungsari@gmail.com'),
 
+    'student_email_domain' => env('FEEDER_STUDENT_EMAIL_DOMAIN', 'stikes.gunungsari.id'),
+
     'default_nisn' => '0000000000',
 
     'default_handphone' => env('FEEDER_DEFAULT_HANDPHONE', ''),

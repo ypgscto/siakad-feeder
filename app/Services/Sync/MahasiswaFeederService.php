@@ -10,6 +10,7 @@ use App\Services\Feeder\FeederProdiMapService;
 use App\Models\FeederCodeMap;
 use App\Support\Feeder\FeederResponseParser;
 use App\Support\Feeder\HandphoneNormalizer;
+use App\Support\Feeder\StudentEmailResolver;
 use App\Support\Feeder\TanggalDaftarResolver;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
@@ -205,7 +206,7 @@ class MahasiswaFeederService
             'id_wilayah' => config('feeder.default_id_wilayah', '070000'),
             'nisn' => (string) ($student['nisn_placeholder'] ?? config('feeder_maps.default_nisn')),
             'kelurahan' => config('feeder_maps.default_kelurahan'),
-            'email' => (string) ($student['email'] ?? '') ?: config('feeder_maps.default_email'),
+            'email' => StudentEmailResolver::forFeeder($student, $this->nim($student)),
             'jalan' => (string) ($student['alamat'] ?? ''),
             'kecamatan' => config('feeder_maps.default_kecamatan'),
             'penerima_kps' => '0',
