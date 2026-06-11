@@ -103,6 +103,25 @@ if (-not (Test-Path $sqlite)) {
     New-Item -ItemType File -Path $sqlite -Force | Out-Null
 }
 
+$phpModules = & $php -m 2>$null
+$usesSqlite = $false
+if (Test-Path ".env") {
+    $envRaw = Get-Content ".env" -Raw
+    if ($envRaw -match '(?m)^\s*DB_CONNECTION\s*=\s*sqlite\s*$') {
+        $usesSqlite = $true
+    }
+}
+if ($usesSqlite -and ($phpModules -notmatch '(?m)^pdo_sqlite$')) {
+    throw @"
+PHP tidak punya driver SQLite (pdo_sqlite). Siakad-Feeder memakai DB_CONNECTION=sqlite.
+
+Jalankan:
+  powershell -ExecutionPolicy Bypass -File deploy\enable-php-sqlite.ps1
+
+Atau buka php.ini (php --ini), aktifkan extension=pdo_sqlite dan extension=sqlite3, lalu restart Apache.
+"@
+}
+
 Invoke-DeployCommand $composer @("install", "--no-dev", "--prefer-dist", "--no-interaction", "--optimize-autoloader")
 Invoke-DeployCommand $npm @("ci")
 Invoke-DeployCommand $npm @("run", "build")

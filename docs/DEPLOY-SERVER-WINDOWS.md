@@ -222,8 +222,52 @@ Jika masih 500: `powershell -ExecutionPolicy Bypass -File deploy\fix-apache-prod
 | API update: `.env wajib sudah ada` | Normal — jangan copy `.env.example` di update |
 | Feeder 404 | Akses lewat `.../siakad-feeder/public/` atau arahkan virtual host ke folder `public` |
 | **500 Server Error** (Apache) | Jalankan `deploy\fix-apache-production.ps1`. Penyebab umum: `npm run build` belum dijalankan (`public/build/manifest.json` hilang), `APP_KEY` kosong, migrate belum jalan. Cek `storage\logs\laravel.log` |
+| **`could not find driver` (sqlite)** | Ekstensi PHP belum aktif. Jalankan `deploy\enable-php-sqlite.ps1` atau edit `php.ini` (lihat di bawah) |
+| **`could not find driver` (sqlite)** | PHP belum aktifkan SQLite. Jalankan `deploy\enable-php-sqlite.ps1`, restart Apache, lalu `php artisan migrate --force` |
 | **405 Method Not Allowed** | Tambah `APP_SUBDIRECTORY=/siakad-feeder/public` di `.env` (atau pakai kode terbaru — auto-detect dari `SCRIPT_NAME`); `php artisan config:clear` |
 | Pengaturan URL kembali ke `.test` | Pakai kode terbaru (perbaikan form pengaturan) |
 | Kirim mahasiswa lambat | Pastikan Siakad-API sudah di-update (filter `nims`) |
+
+### Aktifkan SQLite di PHP (Windows)
+
+Siakad-Feeder memakai `DB_CONNECTION=sqlite`. Error migrate:
+
+```text
+could not find driver (Connection: sqlite, ...)
+```
+
+**Perbaikan cepat:**
+
+```powershell
+cd C:\webserver\www\siakad-feeder
+powershell -ExecutionPolicy Bypass -File deploy\enable-php-sqlite.ps1
+php artisan migrate --force
+php artisan db:seed --force
+```
+
+**Manual** jika skrip belum ada:
+
+```powershell
+php --ini
+# Buka file "Loaded Configuration File", contoh:
+# C:\webserver\bin\php\php-8.3.12-Win32-vs16-x64\php.ini
+```
+
+Hapus `;` di depan baris ini (atau tambahkan jika belum ada):
+
+```ini
+extension=pdo_sqlite
+extension=sqlite3
+```
+
+Verifikasi:
+
+```powershell
+php -m | findstr -i sqlite
+```
+
+Harus muncul `pdo_sqlite` dan `sqlite3`. **Restart Apache** setelah mengubah `php.ini`.
+
+---
 
 Lihat juga: [NEO-FEEDER-SERVER.md](./NEO-FEEDER-SERVER.md), [DEPLOY.md](./DEPLOY.md)
