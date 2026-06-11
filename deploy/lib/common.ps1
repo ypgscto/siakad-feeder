@@ -104,66 +104,167 @@ function Test-PhpExtensionLoaded {
     return $out -match "^$([regex]::Escape($ExtensionName))$"
 }
 
-function Enable-PhpIniExtension {
-    param([string]$IniPath, [string[]]$Names)
-    $lines = Get-Content $IniPath
+function Get-PhpIniPath {
+    param([string]$PhpExe)
+    $iniInfo = & $PhpExe --ini 2>&1 | Out-String
+    $iniMatch = [regex]::Match($iniInfo, "Loaded Configuration File:\s+(.+)")
+    if (-not $iniMatch.Success) { return $null }
+    $path = $iniMatch.Groups[1].Value.Trim()
+    if ($path -eq '(none)') { return $null }
+    return $path
+}
+
+function Save-PhpIniLines {
+    param([string]$IniPath, [string[]]$Lines)
+    $backup = "$IniPath.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+    Copy-Item $IniPath $backup -Force
+    Write-Host "  [BACKUP] $backup" -ForegroundColor DarkGray
+    [System.IO.File]::WriteAllLines($IniPath, $Lines)
+}
+
+function Set-PhpIniExtensionDir {
+    param([string]$IniPath, [string]$PhpDir)
+    $lines = [System.Collections.ArrayList]@(Get-Content $IniPath)
+    $extDir = Join-Path $PhpDir "ext"
+    $changed = $false
+    $found = $false
+
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^\s*;?\s*extension_dir\s*=') {
+            $found = $true
+            if ($lines[$i] -match '^\s*;' -or $lines[$i] -notmatch [regex]::Escape($extDir)) {
+                $lines[$i] = "extension_dir = `"$extDir`""
+                $changed = $true
+                Write-Host "  [FIX] extension_dir = $extDir" -ForegroundColor Yellow
+            }
+            break
+        }
+    }
+
+    if (-not $found) {
+        [void]$lines.Add("extension_dir = `"$extDir`"")
+        $changed = $true
+        Write-Host "  [FIX] tambah extension_dir = $extDir" -ForegroundColor Yellow
+    }
+
+    if ($changed) { Save-PhpIniLines $IniPath $lines.ToArray() }
+}
+
+function Enable-PhpIniExtensionLine {
+    param(
+        [string]$IniPath,
+        [string[]]$Candidates
+    )
+    $lines = [System.Collections.ArrayList]@(Get-Content $IniPath)
     $changed = $false
 
-    foreach ($name in $Names) {
-        $pattern = "^\s*;?\s*extension\s*=\s*$([regex]::Escape($name))(\s|$)"
+    foreach ($candidate in $Candidates) {
+        $escaped = [regex]::Escape($candidate)
+        $pattern = "^\s*;?\s*extension\s*=\s*$escaped(\s|$)"
         $found = $false
+
         for ($i = 0; $i -lt $lines.Count; $i++) {
             if ($lines[$i] -match $pattern) {
                 $found = $true
                 if ($lines[$i] -match '^\s*;') {
-                    $lines[$i] = "extension=$name"
+                    $lines[$i] = "extension=$candidate"
                     $changed = $true
-                    Write-Host "  [FIX] aktifkan extension=$name" -ForegroundColor Yellow
+                    Write-Host "  [FIX] aktifkan extension=$candidate" -ForegroundColor Yellow
                 }
                 break
             }
         }
+
         if (-not $found) {
-            Add-Content -Path $IniPath -Value "extension=$name"
+            [void]$lines.Add("extension=$candidate")
             $changed = $true
-            Write-Host "  [FIX] tambah extension=$name" -ForegroundColor Yellow
+            Write-Host "  [FIX] tambah extension=$candidate" -ForegroundColor Yellow
         }
     }
 
-    if ($changed) { Set-Content -Path $IniPath -Value $lines -Encoding UTF8 }
+    if ($changed) { Save-PhpIniLines $IniPath $lines.ToArray() }
     return $changed
+}
+
+function Restart-DeployApache {
+    foreach ($svc in @("Apache2.4", "apache", "httpd", "wampapache64", "wampapache")) {
+        $s = Get-Service -Name $svc -ErrorAction SilentlyContinue
+        if (-not $s) { continue }
+        Write-Host "  >> Restart-Service $svc" -ForegroundColor DarkGray
+        try {
+            Restart-Service $svc -Force -ErrorAction Stop
+            Write-DeployOk "Apache ($svc) di-restart"
+        } catch {
+            Write-DeployWarn "Gagal restart $svc - jalankan PowerShell sebagai Administrator"
+        }
+        return
+    }
+    Write-DeployWarn "Service Apache tidak ditemukan - restart manual web server"
 }
 
 function Ensure-PhpSqlite {
     param([string]$PhpExe)
 
+    Write-Host ""
+    Write-Host "--- Aktifkan SQLite di PHP ---" -ForegroundColor Cyan
+    Write-Host "  PHP: $PhpExe"
+
     if ((Test-PhpExtensionLoaded $PhpExe "pdo_sqlite") -and (Test-PhpExtensionLoaded $PhpExe "sqlite3")) {
-        Write-DeployOk "pdo_sqlite + sqlite3 aktif"
+        Write-DeployOk "pdo_sqlite + sqlite3 sudah aktif"
         return
     }
 
-    $iniInfo = & $PhpExe --ini 2>&1 | Out-String
-    $iniMatch = [regex]::Match($iniInfo, "Loaded Configuration File:\s+(.+)")
-    if (-not $iniMatch.Success) { throw "php.ini tidak ditemukan. Jalankan: php --ini" }
+    $phpDir = Split-Path $PhpExe -Parent
+    $extDir = Join-Path $phpDir "ext"
+    Write-Host "  Folder ext: $extDir"
 
-    $iniPath = $iniMatch.Groups[1].Value.Trim()
-    Write-Host "  php.ini: $iniPath"
-
-    Enable-PhpIniExtension $iniPath @("pdo_sqlite", "sqlite3") | Out-Null
-
-    if (-not (Test-PhpExtensionLoaded $PhpExe "pdo_sqlite")) {
+    $pdoDll = Join-Path $extDir "php_pdo_sqlite.dll"
+    $sqliteDll = Join-Path $extDir "php_sqlite3.dll"
+    if (-not (Test-Path $pdoDll)) {
         throw @"
-pdo_sqlite masih belum aktif.
+File tidak ditemukan: $pdoDll
 
-Buka $iniPath dan pastikan ada (tanpa titik koma):
-  extension=pdo_sqlite
-  extension=sqlite3
-
-Lalu restart Apache dan jalankan ulang skrip deploy.
+PHP di server ini tidak punya modul SQLite. Solusi:
+  1. Install ulang PHP "Thread Safe" yang menyertakan ext\php_pdo_sqlite.dll
+  2. Atau salin folder ext dari instalasi PHP lengkap (Laragon) ke $extDir
 "@
     }
 
-    Write-DeployOk "SQLite aktif di PHP CLI"
+    $iniPath = Get-PhpIniPath $PhpExe
+    if (-not $iniPath -or -not (Test-Path $iniPath)) {
+        throw "php.ini tidak ditemukan. Jalankan: `"$PhpExe`" --ini"
+    }
+    Write-Host "  php.ini: $iniPath"
+
+    Set-PhpIniExtensionDir $iniPath $phpDir
+    Enable-PhpIniExtensionLine $iniPath @("pdo_sqlite", "php_pdo_sqlite.dll") | Out-Null
+    Enable-PhpIniExtensionLine $iniPath @("sqlite3", "php_sqlite3.dll") | Out-Null
+
+    if (-not (Test-PhpExtensionLoaded $PhpExe "pdo_sqlite")) {
+        Write-DeployWarn "pdo_sqlite belum aktif setelah edit php.ini"
+        Restart-DeployApache
+        Start-Sleep -Seconds 2
+    }
+
+    if (-not (Test-PhpExtensionLoaded $PhpExe "pdo_sqlite")) {
+        Write-Host ""
+        Write-Host "  Verifikasi manual:" -ForegroundColor Yellow
+        Write-Host "    `"$PhpExe`" -m | findstr -i sqlite"
+        throw @"
+pdo_sqlite masih belum aktif.
+
+Edit manual $iniPath :
+  extension_dir = "$extDir"
+  extension=php_pdo_sqlite.dll
+  extension=php_sqlite3.dll
+
+Simpan, restart Apache, lalu: php -m | findstr -i sqlite
+"@
+    }
+
+    Write-DeployOk "pdo_sqlite aktif"
+    & $PhpExe -m 2>$null | Select-String -Pattern "sqlite" | ForEach-Object { Write-Host "    $_" -ForegroundColor Green }
+    Restart-DeployApache
 }
 
 function Initialize-DeployGitRepo {
