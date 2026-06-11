@@ -42,6 +42,13 @@ Skrip otomatis:
 
 ### Edit `.env` (setelah install)
 
+**PENTING:** `APP_URL` = alamat **HTTP di browser**, BUKAN path folder server.
+
+| Salah | Benar |
+|-------|-------|
+| `C:\webserver\www\siakad-feeder\public` | `http://98.142.245.18/siakad-feeder/public` |
+| `98.142.245.18/siakad-feeder/public` (tanpa http) | `http://98.142.245.18/siakad-feeder/public` |
+
 ```env
 APP_ENV=production
 APP_DEBUG=false

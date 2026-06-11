@@ -49,7 +49,11 @@ Write-Host "--- .env database ---"
 if (Test-Path ".env") {
     $envRaw = Get-Content ".env" -Raw
     Test-ItemOk ($envRaw -match 'APP_KEY=base64:[A-Za-z0-9+\/=]{20,}') "APP_KEY terisi" "php artisan key:generate"
-    Test-ItemOk ($envRaw -match 'APP_URL=http.*/siakad-feeder/public') "APP_URL pakai /siakad-feeder/public" "APP_URL=http://98.142.245.18/siakad-feeder/public"
+    $badPath = $envRaw -match 'APP_URL\s*=\s*[A-Za-z]:\\' -or $envRaw -match 'APP_URL\s*=\s*C:' -or $envRaw -match 'ASSET_URL\s*=\s*[A-Za-z]:'
+    if ($badPath) {
+        Test-ItemOk $false "APP_URL bukan path folder" "jalankan: deploy\fix-env-urls.ps1"
+    }
+    Test-ItemOk ($envRaw -match 'APP_URL=http.*/siakad-feeder/public') "APP_URL pakai /siakad-feeder/public" "jalankan: deploy\fix-env-urls.ps1"
     $hasAsset = ($envRaw -match 'ASSET_URL=http') -or ($envRaw -match 'APP_URL=.*/siakad-feeder/public')
     Test-ItemOk $hasAsset "ASSET_URL atau APP_URL subfolder /public" "set ASSET_URL=http://98.142.245.18/siakad-feeder/public"
     if ($dbConn -eq "mysql") {

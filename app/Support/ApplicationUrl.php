@@ -9,16 +9,33 @@ class ApplicationUrl
     public static function apply(): void
     {
         $root = rtrim((string) config('app.url'), '/');
-        if ($root === '' || ! str_starts_with($root, 'http')) {
+        if (! self::isValidHttpUrl($root)) {
             return;
         }
 
         URL::forceRootUrl($root);
 
         $asset = rtrim((string) (config('app.asset_url') ?: $root), '/');
-        if ($asset !== '') {
+        if (self::isValidHttpUrl($asset)) {
             URL::useAssetOrigin($asset);
         }
+    }
+
+    public static function isValidHttpUrl(string $url): bool
+    {
+        if ($url === '') {
+            return false;
+        }
+
+        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            return false;
+        }
+
+        if (str_contains($url, '\\') || preg_match('#://[A-Za-z]:/#', $url)) {
+            return false;
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) !== false;
     }
 
     public static function subdirectoryPrefix(): string
