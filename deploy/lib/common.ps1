@@ -272,6 +272,7 @@ function Show-DeployFinishMessage {
     Write-Host "Tes di browser:"
     Write-Host "  http://98.142.245.18/siakad-feeder/public/up"
     Write-Host "  http://98.142.245.18/siakad-feeder/public/"
+    Write-Host "  (atau http://98.142.245.18/siakad-feeder/ - redirect ke /public/)"
     Write-Host ""
     if ($IsFreshInstall) {
         Write-Host "Langkah berikutnya:"

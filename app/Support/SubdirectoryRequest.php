@@ -35,11 +35,20 @@ class SubdirectoryRequest
         }
 
         $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
-        if (! str_starts_with($path, $base)) {
+        if (str_starts_with($path, $base)) {
+            self::apply($base);
+
             return;
         }
 
-        self::apply($base);
+        // Akses /siakad-feeder/ (tanpa /public) lewat root .htaccess atau index.php
+        $parent = str_replace('\\', '/', dirname($base));
+        if ($parent !== '/' && $parent !== '.' && self::pathUnderPrefix($path, $parent)) {
+            $query = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_QUERY);
+            $_SERVER['REQUEST_URI'] = '/'.($query ? '?'.$query : '');
+            $_SERVER['SCRIPT_NAME'] = rtrim($base, '/').'/index.php';
+            $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
+        }
     }
 
     public static function apply(string $base): void
@@ -65,6 +74,13 @@ class SubdirectoryRequest
         $_SERVER['REQUEST_URI'] = $path.($query ? '?'.$query : '');
         $_SERVER['SCRIPT_NAME'] = rtrim($base, '/').'/index.php';
         $_SERVER['PHP_SELF'] = $_SERVER['SCRIPT_NAME'];
+    }
+
+    protected static function pathUnderPrefix(string $path, string $prefix): bool
+    {
+        $prefix = rtrim($prefix, '/');
+
+        return $path === $prefix || str_starts_with($path, $prefix.'/');
     }
 
     protected static function readSubdirectoryFromEnv(string $envPath): string

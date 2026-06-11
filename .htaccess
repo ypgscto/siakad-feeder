@@ -1,4 +1,7 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteRule ^(.*)$ public/$1 [L]
+
+    # /siakad-feeder/ -> /siakad-feeder/public/
+    RewriteRule ^$ public/ [R=301,L]
+    RewriteRule ^((?!public/).*)$ public/$1 [L]
 </IfModule>
