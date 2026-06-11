@@ -28,6 +28,26 @@ class ProdiAccessService
     }
 
     /**
+     * @param  list<array<string, mixed>>  $prodiRows
+     */
+    public function canonicalProdiId(string $assigned, array $prodiRows): string
+    {
+        $assigned = trim($assigned);
+
+        if ($assigned === '') {
+            return '';
+        }
+
+        foreach ($prodiRows as $row) {
+            if ($this->prodiRowMatches($assigned, $row)) {
+                return $this->extractProdiIdFromRow($row);
+            }
+        }
+
+        return $assigned;
+    }
+
+    /**
      * @param  array<string, mixed>  $master
      * @param  array<string, mixed>  $filters
      * @return array{0: array<string, mixed>, 1: array<string, mixed>}
@@ -41,12 +61,19 @@ class ProdiAccessService
             return [$master, $filters];
         }
 
-        if (isset($master['prodi']) && is_array($master['prodi'])) {
-            $master['prodi'] = $this->filterProdiList($master['prodi'], $assigned);
+        $prodiRows = isset($master['prodi']) && is_array($master['prodi']) ? $master['prodi'] : [];
+        $canonicalAssigned = $this->canonicalProdiId($assigned, $prodiRows);
+
+        if ($prodiRows !== []) {
+            $master['prodi'] = $this->filterProdiList($prodiRows, $canonicalAssigned);
         }
 
         if (array_key_exists('prodi_id', $filters)) {
-            $filters['prodi_id'] = $this->enforceProdiId($assigned, (string) $filters['prodi_id']);
+            $filters['prodi_id'] = $this->enforceProdiId(
+                $canonicalAssigned,
+                (string) $filters['prodi_id'],
+                $prodiRows,
+            );
         }
 
         return [$master, $filters];
@@ -66,19 +93,35 @@ class ProdiAccessService
         }
 
         if (array_key_exists('prodi_id', $filters)) {
-            $filters['prodi_id'] = $this->enforceProdiId($assigned, (string) $filters['prodi_id']);
+            $filters['prodi_id'] = $this->enforceProdiId(
+                $assigned,
+                (string) $filters['prodi_id'],
+            );
         }
 
         return $filters;
     }
 
-    public function enforceProdiId(string $assigned, string $requested): string
+    /**
+     * @param  list<array<string, mixed>>  $prodiRows
+     */
+    public function enforceProdiId(string $assigned, string $requested, array $prodiRows = []): string
     {
-        if ($requested !== '' && $requested !== $assigned) {
-            abort(403, 'Anda hanya dapat mengakses program studi yang ditugaskan.');
+        $canonicalAssigned = $prodiRows !== []
+            ? $this->canonicalProdiId($assigned, $prodiRows)
+            : trim($assigned);
+
+        if ($requested !== '') {
+            $canonicalRequested = $prodiRows !== []
+                ? $this->canonicalProdiId($requested, $prodiRows)
+                : trim($requested);
+
+            if ($canonicalRequested !== $canonicalAssigned) {
+                abort(403, 'Anda hanya dapat mengakses program studi yang ditugaskan.');
+            }
         }
 
-        return $assigned;
+        return $canonicalAssigned;
     }
 
     /**
@@ -89,8 +132,30 @@ class ProdiAccessService
     {
         return array_values(array_filter(
             $prodiRows,
-            fn (array $row): bool => $this->extractProdiIdFromRow($row) === $assignedProdiId,
+            fn (array $row): bool => $this->prodiRowMatches($assignedProdiId, $row),
         ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    public function prodiRowMatches(string $needle, array $row): bool
+    {
+        $needleNorm = $this->normalizeProdiToken($needle);
+
+        if ($needleNorm === '') {
+            return false;
+        }
+
+        foreach (['id', 'ProdiID', 'prodi_id', 'kode', 'kode_prodi', 'nama', 'Nama'] as $key) {
+            $value = $this->normalizeProdiToken((string) ($row[$key] ?? ''));
+
+            if ($value !== '' && $value === $needleNorm) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -115,11 +180,16 @@ class ProdiAccessService
     public function prodiLabel(array $prodiRows, string $prodiId): string
     {
         foreach ($prodiRows as $row) {
-            if ($this->extractProdiIdFromRow($row) === $prodiId) {
-                return (string) ($row['nama'] ?? $row['Nama'] ?? $prodiId);
+            if ($this->prodiRowMatches($prodiId, $row)) {
+                return (string) ($row['nama'] ?? $row['Nama'] ?? $this->extractProdiIdFromRow($row) ?: $prodiId);
             }
         }
 
         return $prodiId;
+    }
+
+    protected function normalizeProdiToken(string $value): string
+    {
+        return mb_strtolower(trim($value));
     }
 }

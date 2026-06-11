@@ -23,7 +23,7 @@ class AcademicFilterResolver
     {
         $filters = [
             'program_id' => $this->pick($request, 'program_id', $master['programs'] ?? []),
-            'prodi_id' => $this->pick($request, 'prodi_id', $master['prodi'] ?? []),
+            'prodi_id' => $this->resolveProdiId($request, $master['prodi'] ?? []),
             'tahun_id' => $this->pick($request, 'tahun_id', $master['tahun'] ?? [], ['id', 'tahun_id', 'TahunID']),
             'status_awal_id' => $this->pick($request, 'status_awal_id', $master['status_awal'] ?? []),
         ];
@@ -39,7 +39,7 @@ class AcademicFilterResolver
     {
         $filters = [
             'program_id' => $this->pick($request, 'program_id', $master['programs'] ?? []),
-            'prodi_id' => $this->pick($request, 'prodi_id', $master['prodi'] ?? []),
+            'prodi_id' => $this->resolveProdiId($request, $master['prodi'] ?? []),
             'tahun_id' => $this->pick($request, 'tahun_id', $master['tahun'] ?? [], ['id', 'tahun_id', 'TahunID']),
             'status_awal_id' => $this->pick($request, 'status_awal_id', $master['status_awal'] ?? []),
         ];
@@ -50,6 +50,30 @@ class AcademicFilterResolver
             'master' => $master,
             'filters' => $filters,
         ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $prodiRows
+     */
+    protected function resolveProdiId(Request $request, array $prodiRows): string
+    {
+        $prodiAccess = app(ProdiAccessService::class);
+        $requested = $request->string('prodi_id')->toString();
+        $assigned = $prodiAccess->assignedProdiId(Auth::user());
+
+        if ($assigned !== null) {
+            if ($requested === '') {
+                return $prodiAccess->canonicalProdiId($assigned, $prodiRows);
+            }
+
+            return $requested;
+        }
+
+        if ($requested !== '') {
+            return $requested;
+        }
+
+        return $this->pick($request, 'prodi_id', $prodiRows);
     }
 
     /**
