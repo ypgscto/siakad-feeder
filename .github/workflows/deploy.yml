@@ -27,6 +27,4 @@ jobs:
           script_stop: true
           script: |
             cd "${{ secrets.DEPLOY_PATH }}"
-            git fetch origin main
-            git reset --hard origin/main
-            powershell.exe -NoProfile -ExecutionPolicy Bypass -File deploy/remote-post-deploy.ps1
+            powershell.exe -NoProfile -ExecutionPolicy Bypass -File deploy/update.ps1
