@@ -4,6 +4,8 @@
 
 Lokal dan server memakai **Windows** + **Laragon**. Deploy otomatis lewat GitHub Actions: SSH ke server → `git pull` → skrip PowerShell.
 
+> **Server baru / fresh install:** ikuti **[DEPLOY-FRESH-WINDOWS.md](./DEPLOY-FRESH-WINDOWS.md)** (termasuk update **Siakad-API** wajib).
+
 ## Ringkasan alur
 
 1. Push ke branch `main` di GitHub

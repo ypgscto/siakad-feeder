@@ -25,7 +25,7 @@ class DashboardController extends Controller
         }
 
         try {
-            $feeder->token();
+            $feeder->ping();
             $feederStatus = ['ok' => true, 'message' => 'Neo Feeder token OK'];
         } catch (RuntimeException $e) {
             $feederStatus = ['ok' => false, 'message' => $e->getMessage()];

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
@@ -183,11 +184,11 @@ class IntegrationSettingsService
     public function updateFromInput(array $input): void
     {
         foreach ($this->definitions() as $key => $definition) {
-            if (! array_key_exists($key, $input)) {
+            if (! Arr::has($input, $key)) {
                 continue;
             }
 
-            $value = $input[$key];
+            $value = Arr::get($input, $key);
 
             if (($definition['secret'] ?? false) && trim((string) $value) === '') {
                 continue;
@@ -208,6 +209,8 @@ class IntegrationSettingsService
             $this->set($key, $value);
         }
 
+        Cache::forget(self::CACHE_KEY);
+        $this->runtimeCache = null;
         Cache::forget('feeder_ws_token');
     }
 

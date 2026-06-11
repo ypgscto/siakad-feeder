@@ -76,21 +76,23 @@
                                 {{ $def['label'] }}
                             </label>
 
+                            @php $fieldName = \App\Support\SettingsFieldName::html($key); @endphp
+
                             @if ($type === 'boolean')
                                 <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-                                    <input type="hidden" name="{{ $key }}" value="0">
-                                    <input type="checkbox" name="{{ $key }}" value="1" id="{{ str_replace('.', '_', $key) }}"
+                                    <input type="hidden" name="{{ $fieldName }}" value="0">
+                                    <input type="checkbox" name="{{ $fieldName }}" value="1" id="{{ str_replace('.', '_', $key) }}"
                                            @checked(filter_var(old($key, $values[$key] ?? false), FILTER_VALIDATE_BOOLEAN))
                                            class="rounded border-slate-300 text-teal-600 focus:ring-teal-500">
                                     Aktif
                                 </label>
                             @elseif ($isSecret)
-                                <input type="password" name="{{ $key }}" id="{{ str_replace('.', '_', $key) }}"
+                                <input type="password" name="{{ $fieldName }}" id="{{ str_replace('.', '_', $key) }}"
                                        autocomplete="new-password"
                                        placeholder="{{ $hasSecret ? '•••••••• (kosongkan jika tidak diubah)' : 'Isi token / password' }}"
                                        class="w-full rounded-lg border-slate-300 text-sm">
                             @else
-                                <input type="{{ $type === 'integer' ? 'number' : 'text' }}" name="{{ $key }}"
+                                <input type="{{ $type === 'integer' ? 'number' : 'text' }}" name="{{ $fieldName }}"
                                        id="{{ str_replace('.', '_', $key) }}"
                                        value="{{ $type === 'integer' ? (int) $value : $value }}"
                                        @if ($type === 'integer') min="1" @endif

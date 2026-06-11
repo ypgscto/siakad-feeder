@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AcademicFilterResolver;
+use App\Services\Feeder\FeederClient;
 use App\Services\SiakadApiService;
 use App\Services\Sync\MahasiswaFeederService;
 use Illuminate\Http\RedirectResponse;
@@ -75,9 +76,21 @@ class MahasiswaController extends Controller
         $filters = $this->validateSyncFilters($request);
 
         try {
-            $students = $siakad->fetchMahasiswaSync(
-                array_filter($filters, fn (string $v) => $v !== ''),
-            );
+            app(FeederClient::class)->ping();
+        } catch (RuntimeException $e) {
+            return redirect()
+                ->route('admin.mahasiswa.index', array_merge($filters, ['load' => 1]))
+                ->with('error', 'Neo Feeder tidak siap: '.$e->getMessage());
+        }
+
+        try {
+            $query = array_filter($filters, fn (string $v) => $v !== '');
+            $nims = $this->selectedNims($request);
+            if ($request->boolean('only_selected') && $nims !== []) {
+                $query['nims'] = implode(',', $nims);
+            }
+
+            $students = $siakad->fetchMahasiswaSync($query);
             $students = $this->filterSelectedStudents($students, $request);
         } catch (RuntimeException $e) {
             return redirect()
@@ -88,7 +101,15 @@ class MahasiswaController extends Controller
         if ($students === []) {
             return redirect()
                 ->route('admin.mahasiswa.index', array_merge($filters, ['load' => 1]))
-                ->with('error', 'Tidak ada mahasiswa untuk dikirim.');
+                ->with('error', 'Tidak ada mahasiswa untuk dikirim. Centang minimal satu baris mahasiswa.');
+        }
+
+        try {
+            app(FeederClient::class)->ensureReadyForWrite();
+        } catch (RuntimeException $e) {
+            return redirect()
+                ->route('admin.mahasiswa.index', array_merge($filters, ['load' => 1]))
+                ->with('error', 'Neo Feeder tidak siap untuk kirim data: '.$e->getMessage());
         }
 
         try {
@@ -167,6 +188,17 @@ class MahasiswaController extends Controller
     }
 
     /**
+     * @return list<string>
+     */
+    protected function selectedNims(Request $request): array
+    {
+        return array_values(array_filter(
+            (array) $request->input('nims', []),
+            fn ($v) => is_string($v) && $v !== '',
+        ));
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $students
      * @return list<array<string, mixed>>
      */
@@ -176,7 +208,7 @@ class MahasiswaController extends Controller
             return $students;
         }
 
-        $nims = array_filter((array) $request->input('nims', []), fn ($v) => is_string($v) && $v !== '');
+        $nims = $this->selectedNims($request);
         if ($nims === []) {
             return [];
         }

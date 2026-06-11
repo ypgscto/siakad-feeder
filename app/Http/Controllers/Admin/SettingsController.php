@@ -56,7 +56,7 @@ class SettingsController extends Controller
     public function testFeeder(FeederClient $feeder): RedirectResponse
     {
         try {
-            $feeder->token();
+            $feeder->ping();
             $message = 'Neo Feeder token OK ('.config('feeder.ws_url').').';
         } catch (RuntimeException $e) {
             return back()->with('test_error', 'Neo Feeder: '.$e->getMessage());
