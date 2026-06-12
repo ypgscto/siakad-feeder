@@ -13,7 +13,7 @@ final class SksDiakuiResolver
      */
     public static function resolve(array $student): ?int
     {
-        foreach (['sks_diakui', 'total_sks_pindah', 'TotalSKSPindah'] as $key) {
+        foreach (['sks_diakui', 'sks_konversi_sum', 'total_sks_pindah', 'TotalSKSPindah'] as $key) {
             $parsed = self::parseInt($student[$key] ?? null);
             if ($parsed !== null) {
                 return $parsed;
