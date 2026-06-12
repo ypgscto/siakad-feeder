@@ -149,6 +149,7 @@
                                 <th class="px-3 py-3">Prodi</th>
                                 <th class="px-3 py-3">Tahun</th>
                                 <th class="px-3 py-3">Status Awal</th>
+                                <th class="px-3 py-3">SKS Diakui</th>
                                 <th class="px-3 py-3">Feeder</th>
                             </tr>
                         </thead>
@@ -176,13 +177,20 @@
                                     <td class="px-3 py-2">{{ $row['prodi_id'] ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row['tahun_id'] ?? '-' }}</td>
                                     <td class="px-3 py-2">{{ $row['status_awal_nama'] ?? $row['status_awal_id'] ?? '-' }}</td>
+                                    <td class="px-3 py-2 text-center">
+                                        @if (isset($row['sks_diakui']) && $row['sks_diakui'] !== null)
+                                            {{ $row['sks_diakui'] }}
+                                        @else
+                                            <span class="text-slate-400">—</span>
+                                        @endif
+                                    </td>
                                     <td class="px-3 py-2">
                                         <span class="inline-flex px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-600">—</span>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="px-4 py-8 text-center text-slate-500">Tidak ada data untuk filter ini.</td>
+                                    <td colspan="12" class="px-4 py-8 text-center text-slate-500">Tidak ada data untuk filter ini.</td>
                                 </tr>
                             @endforelse
                         </tbody>

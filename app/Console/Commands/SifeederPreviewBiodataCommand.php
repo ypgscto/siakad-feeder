@@ -7,6 +7,7 @@ use App\Services\SiakadApiService;
 use App\Services\Sync\MahasiswaFeederService;
 use App\Support\Feeder\HandphoneNormalizer;
 use App\Support\Feeder\StudentEmailResolver;
+use App\Support\Feeder\SksDiakuiResolver;
 use App\Support\Feeder\TanggalDaftarResolver;
 use Illuminate\Console\Command;
 use RuntimeException;
@@ -42,6 +43,8 @@ class SifeederPreviewBiodataCommand extends Command
         $this->line('Tahun masuk (id_periode_masuk): '.($student['tahun_id'] ?? '-'));
         $this->line('Tgl kuliah mulai Siakad: '.($student['tgl_kuliah_mulai'] ?? '(kosong)'));
         $this->line('Tanggal daftar ke Feeder: '.TanggalDaftarResolver::resolve($student));
+        $sksDiakui = SksDiakuiResolver::resolve($student);
+        $this->line('SKS diakui (Siakad): '.($sksDiakui !== null ? (string) $sksDiakui : '(kosong — isi TotalSKSPindah di Siakad untuk RPL/pindahan)'));
         $this->line('Email Siakad: '.($student['email'] ?? '(kosong)'));
         $this->line('Email ke Feeder: '.StudentEmailResolver::forFeeder($student, $nim));
         $this->line('HP dari Siakad-API: '.($rawHp !== '' ? $rawHp : '(kosong — update siakad-api jika seharusnya terisi)'));

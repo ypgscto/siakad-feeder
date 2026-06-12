@@ -11,6 +11,7 @@ use App\Models\FeederCodeMap;
 use App\Support\Feeder\FeederResponseParser;
 use App\Support\Feeder\HandphoneNormalizer;
 use App\Support\Feeder\StudentEmailResolver;
+use App\Support\Feeder\SksDiakuiResolver;
 use App\Support\Feeder\TanggalDaftarResolver;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
@@ -305,6 +306,13 @@ class MahasiswaFeederService
             'id_perguruan_tinggi_asal' => $idPtAsal,
             'id_prodi_asal' => $idProdiAsal,
         ];
+
+        if (in_array($jenisDaftar, ['2', '16'], true)) {
+            $sksDiakui = SksDiakuiResolver::resolve($student);
+            if ($sksDiakui !== null) {
+                $record['sks_diakui'] = (string) $sksDiakui;
+            }
+        }
 
         if (! $forUpdate) {
             $record['nim'] = $this->nim($student);
