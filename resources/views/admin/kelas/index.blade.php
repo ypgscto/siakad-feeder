@@ -62,9 +62,9 @@
                                            :checked="selected.includes('{{ $key }}')"
                                            @change="$event.target.checked ? selected.push('{{ $key }}') : selected = selected.filter(k => k !== '{{ $key }}')">
                                 </td>
-                                <td class="px-3 py-2 font-mono text-xs">{{ $row['mk_kode'] ?? '-' }}</td>
-                                <td class="px-3 py-2">{{ $row['nama_kelas'] ?? '-' }}</td>
-                                <td class="px-3 py-2 text-xs">{{ $row['dosen_login'] ?? '-' }}</td>
+                                <td class="px-3 py-2">{{ $row['nama_mk'] ?? $row['mk_kode'] ?? '-' }}</td>
+                                <td class="px-3 py-2">{{ $row['kelas_nama'] ?? $row['nama_kelas'] ?? '-' }}</td>
+                                <td class="px-3 py-2">{{ $row['nama_dosen'] ?? $row['dosen_login'] ?? '-' }}</td>
                                 <td class="px-3 py-2">{{ $row['jumlah_mhsw'] ?? '-' }}</td>
                                 <td class="px-3 py-2"><a href="{{ $pesertaUrl }}" class="text-teal-700 text-xs font-medium hover:underline">Peserta →</a></td>
                             </tr>
