@@ -36,10 +36,11 @@
                                        :checked="selected.length > 0 && selected.length === @js(count($classKeys))"
                                        @change="toggleAll($event.target.checked, @js($classKeys))">
                             </th>
-                            <th class="px-3 py-3">MK</th>
+                            <th class="px-3 py-3">Kode MK</th>
+                            <th class="px-3 py-3">Mata Kuliah</th>
                             <th class="px-3 py-3">Kelas</th>
                             <th class="px-3 py-3">Dosen</th>
-                            <th class="px-3 py-3">Peserta</th>
+                            <th class="px-3 py-3 text-center">Peserta</th>
                             <th class="px-3 py-3"></th>
                         </tr>
                     </thead>
@@ -62,14 +63,20 @@
                                            :checked="selected.includes('{{ $key }}')"
                                            @change="$event.target.checked ? selected.push('{{ $key }}') : selected = selected.filter(k => k !== '{{ $key }}')">
                                 </td>
-                                <td class="px-3 py-2">{{ $row['nama_mk'] ?? $row['mk_kode'] ?? '-' }}</td>
+                                <td class="px-3 py-2 font-mono text-xs whitespace-nowrap">{{ $row['mk_kode'] ?? '-' }}</td>
+                                <td class="px-3 py-2 max-w-[14rem] whitespace-normal break-words">{{ $row['nama_mk'] ?? '-' }}</td>
                                 <td class="px-3 py-2">{{ $row['kelas_nama'] ?? $row['nama_kelas'] ?? '-' }}</td>
                                 <td class="px-3 py-2">{{ $row['nama_dosen'] ?? $row['dosen_login'] ?? '-' }}</td>
-                                <td class="px-3 py-2">{{ $row['jumlah_mhsw'] ?? '-' }}</td>
-                                <td class="px-3 py-2"><a href="{{ $pesertaUrl }}" class="text-teal-700 text-xs font-medium hover:underline">Peserta →</a></td>
+                                <td class="px-3 py-2 text-center">{{ $row['jumlah_mhsw'] ?? '-' }}</td>
+                                <td class="px-3 py-2">
+                                    <a href="{{ $pesertaUrl }}"
+                                       class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700">
+                                        Peserta
+                                    </a>
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Tidak ada kelas.</td></tr>
+                            <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">Tidak ada kelas.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
