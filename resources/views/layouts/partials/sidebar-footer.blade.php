@@ -2,7 +2,7 @@
     $forceExpanded = $forceExpanded ?? false;
 @endphp
 
-<div class="mt-auto shrink-0 border-t border-white/10 px-2 py-3" title="YPGS IT Division">
+<div class="mt-auto shrink-0 border-t border-white/10 bg-teal-950/95 px-2 py-3" title="YPGS IT Division">
     <div class="flex items-center justify-center gap-2">
         <img
             src="{{ asset('images/ypgs-it-division.png') }}"

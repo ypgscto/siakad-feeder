@@ -2,7 +2,7 @@
     $forceExpanded = $forceExpanded ?? false;
 @endphp
 <aside
-    class="flex flex-col h-full min-h-screen bg-gradient-to-b from-teal-950 to-teal-900 text-white shadow-xl w-full"
+    class="flex flex-col h-full bg-gradient-to-b from-teal-950 to-teal-900 text-white shadow-xl w-full"
 >
     <div class="px-3 py-5 border-b border-white/10 shrink-0 w-full">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3 group" title="Siakad-Feeder">
