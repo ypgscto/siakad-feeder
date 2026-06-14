@@ -12,7 +12,7 @@
         <x-admin.prodi-tahun-filter :action="route('admin.kelas.index')" :filters="$filters" :master="$master" />
 
         @if ($loaded)
-            @php $classKeys = collect($classes)->map(fn ($r) => ($r['mk_kode'] ?? '').'|'.($r['nama_kelas'] ?? ''))->values()->all(); @endphp
+            @php $classKeys = collect($classes)->map(fn ($r) => \App\Support\Sync\KelasSelectionKey::fromRow($r))->filter()->values()->all(); @endphp
             <div class="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
                 <div class="flex flex-wrap items-center gap-3">
                     <form method="POST" action="{{ route('admin.kelas.send-kelas') }}" @submit="if(!confirm('Kirim kelas terpilih / semua filter ke Feeder?')) $event.preventDefault()">
@@ -55,7 +55,7 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($classes as $row)
                             @php
-                                $key = ($row['mk_kode'] ?? '').'|'.($row['nama_kelas'] ?? '');
+                                $key = \App\Support\Sync\KelasSelectionKey::fromRow($row);
                                 $pesertaUrl = route('admin.kelas.peserta', [
                                     'prodi_id' => $filters['prodi_id'],
                                     'tahun_id' => $filters['tahun_id'],

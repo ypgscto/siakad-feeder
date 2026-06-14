@@ -9,6 +9,7 @@ use App\Services\SiakadApiService;
 use App\Services\Sync\KelasFeederService;
 use App\Services\Sync\KelasSemesterSyncService;
 use App\Support\Feeder\KelasNamaResolver;
+use App\Support\Sync\KelasSelectionKey;
 use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -233,9 +234,9 @@ class KelasController extends Controller
         $allowed = array_flip($keys);
 
         return array_values(array_filter($classes, function (array $row) use ($allowed): bool {
-            $key = ($row['mk_kode'] ?? '').'|'.($row['nama_kelas'] ?? '');
+            $key = KelasSelectionKey::fromRow($row);
 
-            return isset($allowed[$key]);
+            return $key !== '' && isset($allowed[$key]);
         }));
     }
 
