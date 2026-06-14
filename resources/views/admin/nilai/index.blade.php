@@ -39,6 +39,7 @@
                                         'jadwal_id' => $row['id'] ?? '',
                                         'mk_kode' => $row['mk_kode'] ?? '',
                                         'nama_kelas' => $row['nama_kelas'] ?? '',
+                                        'kelas_nama' => $row['kelas_nama'] ?? '',
                                     ]) }}" class="text-teal-700 text-xs font-medium hover:underline">Nilai peserta →</a>
                                 </td>
                             </tr>

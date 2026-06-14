@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Concerns\LoadsAcademicMaster;
 use App\Http\Controllers\Controller;
 use App\Services\SiakadApiService;
 use App\Services\Sync\KelasFeederService;
+use App\Support\Feeder\KelasNamaResolver;
 use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +59,7 @@ class KelasController extends Controller
         $jadwalId = $request->string('jadwal_id')->toString();
         $mkKode = $request->string('mk_kode')->toString();
         $namaKelas = $request->string('nama_kelas')->toString();
+        $kelasNama = $request->string('kelas_nama')->toString();
         $dosenLogin = $request->string('dosen_login')->toString();
 
         $participants = [];
@@ -96,6 +98,7 @@ class KelasController extends Controller
             'jadwalId' => $jadwalId,
             'mkKode' => $mkKode,
             'namaKelas' => $namaKelas,
+            'kelasNama' => KelasNamaResolver::fromRequest($kelasNama, $namaKelas),
             'dosenLogin' => $dosenLogin,
             'nidn' => $nidn,
             'participants' => $participants,
@@ -127,6 +130,7 @@ class KelasController extends Controller
             'jadwal_id' => ['required', 'string'],
             'mk_kode' => ['required', 'string'],
             'nama_kelas' => ['required', 'string'],
+            'kelas_nama' => ['nullable', 'string'],
             'nidn' => ['nullable', 'string'],
             'only_selected' => ['nullable', 'boolean'],
             'nims' => ['nullable', 'array'],
@@ -144,12 +148,16 @@ class KelasController extends Controller
             'nama_kelas' => $validated['nama_kelas'],
         ]);
         $participants = $this->filterParticipants($participants, $request);
+        $kelasNamaFeeder = KelasNamaResolver::fromRequest(
+            (string) ($validated['kelas_nama'] ?? ''),
+            $validated['nama_kelas'],
+        );
 
         $result = $sync->insertPesertaKelas(
             $participants,
             $validated['tahun_id'],
             $validated['mk_kode'],
-            $validated['nama_kelas'],
+            $kelasNamaFeeder,
         );
 
         $nidn = trim((string) ($validated['nidn'] ?? ''));
@@ -157,7 +165,7 @@ class KelasController extends Controller
             $dosenResult = $sync->insertDosenPengajar(
                 $validated['tahun_id'],
                 $validated['mk_kode'],
-                $validated['nama_kelas'],
+                $kelasNamaFeeder,
                 $nidn,
                 (string) config('feeder_maps.kelas.default_sks_pengajar', '2'),
             );

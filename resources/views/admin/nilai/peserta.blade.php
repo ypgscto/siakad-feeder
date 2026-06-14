@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-slate-800">Nilai Peserta</h2>
-                <p class="text-sm text-slate-500 mt-1">{{ $mkKode }} · {{ $namaKelas }}</p>
+                <p class="text-sm text-slate-500 mt-1">{{ $mkKode }} · {{ $kelasNama }}</p>
             </div>
             <a href="{{ route('admin.nilai.index', array_merge($filters, ['load' => 1])) }}" class="text-sm text-teal-700 hover:underline">← Daftar kelas</a>
         </div>
@@ -20,6 +20,7 @@
                 <input type="hidden" name="jadwal_id" value="{{ $jadwalId }}">
                 <input type="hidden" name="mk_kode" value="{{ $mkKode }}">
                 <input type="hidden" name="nama_kelas" value="{{ $namaKelas }}">
+                <input type="hidden" name="kelas_nama" value="{{ $kelasNama }}">
                 <input type="hidden" name="only_selected" :value="selected.length ? '1' : '0'">
                 <template x-for="nim in selected" :key="nim"><input type="hidden" name="nims[]" :value="nim"></template>
                 <button type="submit" class="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700">Kirim Nilai ke Feeder</button>

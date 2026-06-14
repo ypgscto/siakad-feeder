@@ -8,6 +8,7 @@ use App\Services\Feeder\FeederClient;
 use App\Services\Feeder\FeederLookupService;
 use App\Services\Feeder\FeederProdiMapService;
 use App\Support\Feeder\FeederResponseParser;
+use App\Support\Feeder\KelasNamaResolver;
 use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
@@ -29,7 +30,7 @@ class KelasFeederService
 
         foreach ($classes as $row) {
             $mkKode = (string) ($row['mk_kode'] ?? '');
-            $namaKelas = (string) ($row['nama_kelas'] ?? $row['kode_kelas'] ?? '');
+            $namaKelas = KelasNamaResolver::forFeeder($row);
             $label = "{$mkKode} / {$namaKelas}";
 
             try {

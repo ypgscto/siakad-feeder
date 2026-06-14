@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\LoadsAcademicMaster;
 use App\Http\Controllers\Controller;
 use App\Services\SiakadApiService;
 use App\Services\Sync\NilaiFeederService;
+use App\Support\Feeder\KelasNamaResolver;
 use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,6 +58,7 @@ class NilaiController extends Controller
         $jadwalId = $request->string('jadwal_id')->toString();
         $mkKode = $request->string('mk_kode')->toString();
         $namaKelas = $request->string('nama_kelas')->toString();
+        $kelasNama = $request->string('kelas_nama')->toString();
 
         $participants = [];
         $error = $master['error'];
@@ -81,6 +83,7 @@ class NilaiController extends Controller
             'jadwalId' => $jadwalId,
             'mkKode' => $mkKode,
             'namaKelas' => $namaKelas,
+            'kelasNama' => KelasNamaResolver::fromRequest($kelasNama, $namaKelas),
             'participants' => $participants,
             'error' => $error,
         ]);
@@ -96,6 +99,7 @@ class NilaiController extends Controller
             'jadwal_id' => ['required', 'string'],
             'mk_kode' => ['required', 'string'],
             'nama_kelas' => ['required', 'string'],
+            'kelas_nama' => ['nullable', 'string'],
             'only_selected' => ['nullable', 'boolean'],
             'nims' => ['nullable', 'array'],
         ]);
@@ -120,12 +124,17 @@ class NilaiController extends Controller
             ));
         }
 
+        $kelasNamaFeeder = KelasNamaResolver::fromRequest(
+            (string) ($validated['kelas_nama'] ?? ''),
+            $validated['nama_kelas'],
+        );
+
         try {
             $result = $sync->updateNilaiKelas(
                 $participants,
                 $validated['tahun_id'],
                 $validated['mk_kode'],
-                $validated['nama_kelas'],
+                $kelasNamaFeeder,
             );
         } catch (RuntimeException $e) {
             return redirect()

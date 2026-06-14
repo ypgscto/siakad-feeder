@@ -54,6 +54,7 @@
                                     'jadwal_id' => $row['id'] ?? '',
                                     'mk_kode' => $row['mk_kode'] ?? '',
                                     'nama_kelas' => $row['nama_kelas'] ?? '',
+                                    'kelas_nama' => $row['kelas_nama'] ?? '',
                                     'dosen_login' => $row['dosen_login'] ?? '',
                                 ]);
                             @endphp
