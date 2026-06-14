@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function (): void {
         Route::get('/kelas/log', [SyncLogController::class, 'index'])->defaults('module', 'kelas')->name('kelas.log');
         Route::get('/kelas/peserta', [KelasController::class, 'peserta'])->name('kelas.peserta');
         Route::post('/kelas/kirim', [KelasController::class, 'sendKelas'])->name('kelas.send-kelas');
+        Route::post('/kelas/kirim-semua', [KelasController::class, 'sendKelasFull'])->name('kelas.send-kelas-full');
         Route::post('/kelas/kirim-peserta', [KelasController::class, 'sendPeserta'])->name('kelas.send-peserta');
 
         Route::get('/nilai', [NilaiController::class, 'index'])->name('nilai.index');

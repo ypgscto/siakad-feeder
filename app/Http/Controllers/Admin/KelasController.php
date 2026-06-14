@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Concerns\LoadsAcademicMaster;
 use App\Http\Controllers\Controller;
 use App\Services\SiakadApiService;
 use App\Services\Sync\KelasFeederService;
+use App\Services\Sync\KelasSemesterSyncService;
 use App\Support\Feeder\KelasNamaResolver;
 use App\Support\Sync\SyncFlash;
 use Illuminate\Http\RedirectResponse;
@@ -104,6 +105,25 @@ class KelasController extends Controller
             'participants' => $participants,
             'error' => $error,
         ]);
+    }
+
+    public function sendKelasFull(Request $request, SiakadApiService $siakad, KelasSemesterSyncService $sync): RedirectResponse
+    {
+        @set_time_limit(900);
+        $master = $this->fetchProdiTahunMaster($siakad);
+        $filters = $this->resolveProdiTahunFilters($request, $master);
+
+        if ($filters['prodi_id'] === '') {
+            return redirect()
+                ->route('admin.kelas.index', array_merge($filters, ['load' => 1]))
+                ->with('error', 'Pilih program studi terlebih dahulu.');
+        }
+
+        return $this->redirectSync(
+            $sync->syncFull($filters['prodi_id'], $filters['tahun_id']),
+            'Kirim kelas + peserta + dosen',
+            $filters,
+        );
     }
 
     public function sendKelas(Request $request, SiakadApiService $siakad, KelasFeederService $sync): RedirectResponse

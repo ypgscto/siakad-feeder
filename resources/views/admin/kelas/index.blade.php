@@ -14,14 +14,22 @@
         @if ($loaded)
             @php $classKeys = collect($classes)->map(fn ($r) => ($r['mk_kode'] ?? '').'|'.($r['nama_kelas'] ?? ''))->values()->all(); @endphp
             <div class="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
-                <form method="POST" action="{{ route('admin.kelas.send-kelas') }}" @submit="if(!confirm('Kirim kelas terpilih / semua filter ke Feeder?')) $event.preventDefault()">
-                    @csrf
-                    <input type="hidden" name="prodi_id" value="{{ $filters['prodi_id'] }}">
-                    <input type="hidden" name="tahun_id" value="{{ $filters['tahun_id'] }}">
-                    <input type="hidden" name="only_selected" :value="selected.length ? '1' : '0'">
-                    <template x-for="k in selected" :key="k"><input type="hidden" name="class_keys[]" :value="k"></template>
-                    <button type="submit" class="px-3 py-2 bg-teal-600 text-white text-xs font-semibold rounded-lg hover:bg-teal-700">Kirim Kelas ke Feeder</button>
-                </form>
+                <div class="flex flex-wrap items-center gap-3">
+                    <form method="POST" action="{{ route('admin.kelas.send-kelas') }}" @submit="if(!confirm('Kirim kelas terpilih / semua filter ke Feeder?')) $event.preventDefault()">
+                        @csrf
+                        <input type="hidden" name="prodi_id" value="{{ $filters['prodi_id'] }}">
+                        <input type="hidden" name="tahun_id" value="{{ $filters['tahun_id'] }}">
+                        <input type="hidden" name="only_selected" :value="selected.length ? '1' : '0'">
+                        <template x-for="k in selected" :key="k"><input type="hidden" name="class_keys[]" :value="k"></template>
+                        <button type="submit" class="px-3 py-2 bg-teal-600 text-white text-xs font-semibold rounded-lg hover:bg-teal-700">Kirim Kelas ke Feeder</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.kelas.send-kelas-full') }}" @submit="if(!confirm('Kirim SEMUA kelas filter + peserta + dosen pengajar ke Feeder? Proses bisa beberapa menit.')) $event.preventDefault()">
+                        @csrf
+                        <input type="hidden" name="prodi_id" value="{{ $filters['prodi_id'] }}">
+                        <input type="hidden" name="tahun_id" value="{{ $filters['tahun_id'] }}">
+                        <button type="submit" class="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700">Kirim Semua Sekaligus</button>
+                    </form>
+                </div>
                 <div class="mt-3 pt-3 border-t border-slate-100">
                     <x-admin.sync-log-link module="kelas" />
                 </div>
